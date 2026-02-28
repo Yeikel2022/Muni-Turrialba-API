@@ -1,12 +1,7 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\USUARIO\\Documents\\Repositorios-GitHub\\API-Muni-Turrialba\\Muni-Turrialba-API\\MuniTurrialbaAPI\\",
-  "Documents": [
-    {
-      "AbsoluteMoniker": "D:0:0:{57FF6B3C-1F6F-4A4A-9FFC-471F3119DF36}|MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj|c:\\users\\usuario\\documents\\repositorios-github\\api-muni-turrialba\\muni-turrialba-api\\muniturrialbaapi\\muniturrialbaapi\\muniturrialbaapi.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
-      "RelativeMoniker": "D:0:0:{57FF6B3C-1F6F-4A4A-9FFC-471F3119DF36}|MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj|solutionrelative:muniturrialbaapi\\muniturrialbaapi.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
-    }
-  ],
+  "Documents": [],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -14,21 +9,8 @@
       "DocumentGroups": [
         {
           "DockedWidth": 708,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": -1,
           "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "MuniTurrialbaAPI",
-              "DocumentMoniker": "C:\\Users\\USUARIO\\Documents\\Repositorios-GitHub\\API-Muni-Turrialba\\Muni-Turrialba-API\\MuniTurrialbaAPI\\MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj",
-              "RelativeDocumentMoniker": "MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj",
-              "ToolTip": "C:\\Users\\USUARIO\\Documents\\Repositorios-GitHub\\API-Muni-Turrialba\\Muni-Turrialba-API\\MuniTurrialbaAPI\\MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj",
-              "RelativeToolTip": "MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-02-02T23:34:35.54Z",
-              "EditorCaption": ""
-            },
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{6324226f-61b6-4f28-92ee-18d4b5fe1e48}"
