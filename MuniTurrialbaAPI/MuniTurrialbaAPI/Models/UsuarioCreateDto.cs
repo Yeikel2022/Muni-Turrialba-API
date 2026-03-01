@@ -1,10 +1,9 @@
-﻿namespace MuniTurrialbaAPI.Entities
+﻿namespace MuniTurrialbaAPI.Models
 {
-    public class UsuarioEntitie
+    public class UsuarioCreateDto
     {
-        /* Son los datos que representan -
-         * las columnas de la tabla: "Usuario" */
-        public int Id { get; set; }
+        /* Son los datos que serviran para -
+         * la transferencia de datos. */
         public string Nombre { get; set; }
         public string Apellido_1 { get; set; }
         public string Apellido_2 { get; set; }
@@ -12,9 +11,8 @@
         public string Cedula { get; set; }
         public string? Telefono { get; set; }
         public string Correo_Electronico { get; set; }
-        public string Contraseña { get; set; }        
+        public string Contraseña { get; set; }
         public DateTime Fecha_Creacion { get; set; }
         public byte Imagen_Perfil { get; set; }
-        public int Id_Rol { get; set; }
     }
 }

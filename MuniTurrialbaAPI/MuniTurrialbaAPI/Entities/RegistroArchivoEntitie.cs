@@ -1,7 +1,10 @@
 ﻿namespace MuniTurrialbaAPI.Entities
 {
     public class RegistroArchivoEntitie
-    {
+    {        
+        /* Son los datos que representan -
+         * las columnas de la tabla: "Registro_Archivo" */
+        public int Id { get; set; }
         public byte Archivo { get; set; }
         public string Formato_Archivo { get; set; }
         public DateTime Fecha_Subida { get; set; }
