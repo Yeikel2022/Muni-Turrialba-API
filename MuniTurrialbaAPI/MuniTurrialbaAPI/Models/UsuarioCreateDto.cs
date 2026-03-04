@@ -13,6 +13,7 @@
         public string Correo_Electronico { get; set; }
         public string Contraseña { get; set; }
         public DateTime Fecha_Creacion { get; set; }
-        public byte Imagen_Perfil { get; set; }
+        public byte[]? Imagen_Perfil { get; set; }
+        public int Id_Rol { get; set; }
     }
 }
