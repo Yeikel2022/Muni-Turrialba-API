@@ -1,4 +1,7 @@
 
+using MuniTurrialbaAPI.Models;
+using MuniTurrialbaAPI.Repositories;
+
 namespace MuniTurrialbaAPI
 {
     public class Program
@@ -9,6 +12,9 @@ namespace MuniTurrialbaAPI
 
             // Add services to the container.
             builder.Services.AddAuthorization();
+
+            /*|==========| Zona para agregar los servicios |===========|*/
+            builder.Services.AddSingleton<IUsuarioRepository, UsuarioRepository>();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -27,26 +33,40 @@ namespace MuniTurrialbaAPI
 
             app.UseAuthorization();
 
-            var summaries = new[]
+            /*|=======| RUTAS DEL API |=============|*/
+            
+            //Ruta (tipo: GET) del API que sirve para traer todos los usuarios:
+            app.MapGet("/api/usuarios", async (IUsuarioRepository usuarioRepo) => 
             {
-                "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-            };
+                var usuarios = await usuarioRepo.ObtenerUsuarios();
+                return Results.Ok(usuarios);
+            });
 
-            app.MapGet("/weatherforecast", (HttpContext httpContext) =>
+
+            //Ruta (tipo: GET) del API que sirve para traer un usuario por medio de un ID:
+            /*app.MapGet("/api/usuarios/{id:int}", async (int id, IUsuarioRepository usuarioRepo) => 
             {
-                var forecast = Enumerable.Range(1, 5).Select(index =>
-                    new WeatherForecast
-                    {
-                        Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                        TemperatureC = Random.Shared.Next(-20, 55),
-                        Summary = summaries[Random.Shared.Next(summaries.Length)]
-                    })
-                    .ToArray();
-                return forecast;
-            })
-            .WithName("GetWeatherForecast")
-            .WithOpenApi();
+                var usuario = await usuarioRepo.ObtenerUsuario_PorId(id);
+                return usuario is not null ? Results.Ok(usuario) : Results.NotFound();
+            });*/
 
+
+            //Ruta (tipo: POST) del API que sirve para crear un usuario:
+            app.MapPost("/api/crearusuarios", async (UsuarioCreateDto usuarioDto, 
+                IUsuarioRepository usuarioRepo) => 
+            {
+                if (string.IsNullOrWhiteSpace(usuarioDto.Nombre))
+                {
+                    return Results.BadRequest("Nombre es necesario.");
+                }
+
+                var nuevoIdUsuario = await usuarioRepo.CrearUsuario(usuarioDto);
+
+                return Results.Created($"/api/crearusuarios/{nuevoIdUsuario}", new { Id = nuevoIdUsuario });
+            });
+
+
+            //Comando para ejecutar el proyecto:
             app.Run();
         }
     }
