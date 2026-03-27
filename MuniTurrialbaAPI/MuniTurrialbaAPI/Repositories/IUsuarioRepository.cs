@@ -8,9 +8,17 @@ namespace MuniTurrialbaAPI.Repositories
         /* Son los principales métodos que -
          * realizara el API, pero solo es  -
          * su mención. */
-        Task<IEnumerable<UsuarioEntitie>> ObtenerUsuarios();
-        Task<UsuarioEntitie?> ObtenerUsuario_PorId(int id);
+        
+        /* NOTA: Se le coloco el: ?, para que, cuando se use el método -
+         * este pueda aceptar valores nulos respectivamente.*/
+        Task<IEnumerable<UsuarioEntitie>?> ObtenerUsuarios();
+
+        /* NOTA: Se le coloco el: ?, para que, cuando se use el método -
+         * este pueda aceptar valores nulos respectivamente.*/
+        Task<UsuarioEntitie?>? ObtenerUsuario_PorCorreo(string correoElectronico);
+        
         bool ObtenerIDUsuario_PorCedula(string cedulaParametrizada);
+        
         Task<int> CrearUsuario(UsuarioCreateDto userdto);
     }
 }

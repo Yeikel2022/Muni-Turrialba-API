@@ -1,7 +1,7 @@
 [
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_1",
+    "Method": "\u003CMain\u003Eb__0_2",
     "RelativePath": "api/crearusuarios",
     "HttpMethod": "POST",
     "IsController": false,
@@ -10,6 +10,28 @@
       {
         "Name": "usuarioDto",
         "Type": "MuniTurrialbaAPI.Models.UsuarioCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
+    "Method": "\u003CMain\u003Eb__0_1",
+    "RelativePath": "api/usuario/{correo:required}",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "correo",
+        "Type": "System.String",
         "IsRequired": true
       }
     ],
