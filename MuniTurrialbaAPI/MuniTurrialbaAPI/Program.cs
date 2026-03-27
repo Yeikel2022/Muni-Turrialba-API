@@ -33,36 +33,148 @@ namespace MuniTurrialbaAPI
 
             app.UseAuthorization();
 
-            /*|=======| RUTAS DEL API |=============|*/
-            
+            //                |=============| RUTAS DEL API |=============|
+
             //Ruta (tipo: GET) del API que sirve para traer todos los usuarios:
             app.MapGet("/api/usuarios", async (IUsuarioRepository usuarioRepo) => 
             {
+                /* Aquí lo que se indica es que llama al método: "ObtenerUsuarios()" -
+                 * para traer a todos los usuarios que hay en la BD. */
                 var usuarios = await usuarioRepo.ObtenerUsuarios();
+
+                /* Si la variable: "usuarios" es nulo, quiere decir que no hay nada en la BD. 
+                 * Por lo tanto se manda un error al usuario respectivamente. */
+                if (usuarios is null)
+                {
+                    return Results.NotFound("¡ERROR: No se pudieron obtener los usuarios!");
+                }
+
+
+                /* Si no hubo ningún problema, entonces se mostrarian los usuarios respectivamente, -
+                 * además de indicar el código, que seria un código #200.*/
                 return Results.Ok(usuarios);
             });
 
 
-            //Ruta (tipo: GET) del API que sirve para traer un usuario por medio de un ID:
-            /*app.MapGet("/api/usuarios/{id:int}", async (int id, IUsuarioRepository usuarioRepo) => 
+            //Ruta (tipo: GET) del API que sirve para traer un usuario por medio de un correo:
+            app.MapGet("/api/usuario/{correo:required}", async (string correo,
+                IUsuarioRepository usuarioRepo) => 
             {
-                var usuario = await usuarioRepo.ObtenerUsuario_PorId(id);
-                return usuario is not null ? Results.Ok(usuario) : Results.NotFound();
-            });*/
+                var usuario = await usuarioRepo.ObtenerUsuario_PorCorreo(correo);
+
+                /* Si la variable: "usuario" es nulo, quiere decir que no hay nada en la BD. 
+                 * Por lo tanto se manda un error al usuario respectivamente. */
+                if (usuario is null)
+                {
+                    return Results.NotFound("¡ERROR: No se pudo obtener el usuario!");
+                }
+
+                //return usuario is not null ? Results.Ok(usuario) : Results.NotFound();
+                return Results.Ok(usuario);
+            });
 
 
             //Ruta (tipo: POST) del API que sirve para crear un usuario:
             app.MapPost("/api/crearusuarios", async (UsuarioCreateDto usuarioDto, 
-                IUsuarioRepository usuarioRepo) => 
+                IUsuarioRepository usuarioRepo) =>
             {
+                /* Es para validar si el nombre tiene datos, si es nulo o esta en blanco -
+                 * entonces el API tendria que dar un mensaje indicando que el nombre es -
+                 * necesario. */
                 if (string.IsNullOrWhiteSpace(usuarioDto.Nombre))
                 {
-                    return Results.BadRequest("Nombre es necesario.");
+                    return Results.BadRequest("¡ERROR: El nombre es necesario!");
                 }
 
+
+                /* Es para validar si el primer apellido tiene datos, si es nulo o esta -
+                 * en blanco entonces el API tendria que dar un mensaje indicando que el -
+                 * primer apellido es necesario. */
+                if (string.IsNullOrWhiteSpace(usuarioDto.Apellido_1))
+                {
+                    return Results.BadRequest("¡ERROR: El primer apellido es necesario!");
+                }
+
+
+                /* Es para validar si el segundo apellido tiene datos, si es nulo o esta -
+                 * en blanco entonces el API tendria que dar un mensaje indicando que el - 
+                 * segundo apellido es necesario. */
+                if (string.IsNullOrWhiteSpace(usuarioDto.Apellido_2))
+                {
+                    return Results.BadRequest("¡ERROR: El segundo apellido es necesario!");
+                }
+
+
+                /* Es para validar si la edad tiene datos, si es nulo o esta en blanco -
+                 * entonces el API tendria que dar un mensaje indicando que la edad es -
+                 * necesaria.
+                 * 
+                 * De igual manera haria lo mismo si detecta que la edad lo dejaron en cero, -
+                 * o si ponen una edad mayor a 99 (lo que significaria una edad de 3 digitos) -
+                 * respectivamente. */
+                if (string.IsNullOrWhiteSpace(usuarioDto.Edad.ToString()) || 
+                usuarioDto.Edad == 0 || usuarioDto.Edad > 99)
+                {
+                    return Results.BadRequest("¡ERROR: La edad es necesaria!");
+                }
+
+
+                /* Es para validar si la cédula tiene datos, si es nulo o esta en blanco -
+                 * entonces el API tendria que dar un mensaje indicando que la cédula es -
+                 * necesaria.
+                 * 
+                 * De igual manera haria lo mismo si detecta que la cedula es mayor a 12 digitos, -
+                 * ya que en Costa Rica hay un tamaño definido para la cedula respectivamente. */
+                if (string.IsNullOrWhiteSpace(usuarioDto.Cedula) || usuarioDto.Cedula.Trim().Length > 12)
+                {
+                    return Results.BadRequest("¡ERROR: La cédula es necesaria!");
+                }
+
+
+                /* ******Es para validar si el correo tiene datos, si es nulo o esta en blanco
+                 * entonces el API tendria que dar un mensaje indicando que el correo es -
+                 * necesario. */
+                if (string.IsNullOrWhiteSpace(usuarioDto.Correo_Electronico))
+                {
+                    return Results.BadRequest("¡ERROR: El correo es necesario!");
+                }
+
+
+                /* Es para validar si la contraseña tiene datos, si es nulo o esta en blanco -
+                 * o incluso si no cumple con la cantidad minima de digitos (que es 12) - 
+                 * entonces el API tendria que dar un mensaje indicando que la contraseña - 
+                 * es necesaria. */
+                if (string.IsNullOrWhiteSpace(usuarioDto.Contraseña) ||
+                usuarioDto.Contraseña.Trim().Length < 12)
+                {
+                    return Results.BadRequest("¡ERROR: La contraseña es necesaria!");
+                }
+
+
+                /* Es para validar si el rol tiene datos, si es nulo o esta en blanco
+                 * entonces el API tendria que dar un mensaje indicando que el rol es -
+                 * necesario. */
+                if (string.IsNullOrWhiteSpace(usuarioDto.Id_Rol.ToString()))
+                {
+                    return Results.BadRequest("¡ERROR: El rol es necesario!");
+                }
+
+
+                /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
+                 * al método para crear el usuario. */
                 var nuevoIdUsuario = await usuarioRepo.CrearUsuario(usuarioDto);
 
-                return Results.Created($"/api/crearusuarios/{nuevoIdUsuario}", new { Id = nuevoIdUsuario });
+                //Si la variable nuevoIdUsuario es nulo quiere decir que no hay nada en la BD.
+                if (nuevoIdUsuario.ToString() is null || nuevoIdUsuario == 0)
+                {
+                    return Results.BadRequest("¡ERROR: No se pudo crear el usuario!");
+                }
+
+                /* Si no hubo ningún problema, entonces dara el resultado como creado (que sería -
+                 * el código: #201), lo que indicaria que la solicitud POST se pudo realizar -
+                 * correctamente.*/
+                return Results.Created($"/api/crearusuarios/{nuevoIdUsuario}", 
+                    new { Id = nuevoIdUsuario });
             });
 
 

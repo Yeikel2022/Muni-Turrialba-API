@@ -17,6 +17,28 @@
         }
       }
     },
+    "/api/usuario/{correo}": {
+      "get": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "correo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/crearusuarios": {
       "post": {
         "tags": [
