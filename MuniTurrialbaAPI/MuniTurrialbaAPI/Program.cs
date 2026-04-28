@@ -165,9 +165,16 @@ namespace MuniTurrialbaAPI
                 var nuevoIdUsuario = await usuarioRepo.CrearUsuario(usuarioDto);
 
                 //Si la variable nuevoIdUsuario es nulo quiere decir que no hay nada en la BD.
-                if (nuevoIdUsuario.ToString() is null || nuevoIdUsuario == 0)
+                if (nuevoIdUsuario == null)
                 {
                     return Results.BadRequest("¡ERROR: No se pudo crear el usuario!");
+                }
+
+                //Si la variable nuevoIdUsuario es nulo quiere decir que no hay nada en la BD.
+                if (nuevoIdUsuario == 0)
+                {
+                    return Results.BadRequest("¡ERROR: No se pudo crear el usuario, debido a que ya existe una cuenta con ese correo o cedula " +
+                        "dentro de la aplicación móvil!");
                 }
 
                 /* Si no hubo ningún problema, entonces dara el resultado como creado (que sería -
@@ -175,6 +182,121 @@ namespace MuniTurrialbaAPI
                  * correctamente.*/
                 return Results.Created($"/api/crearusuarios/{nuevoIdUsuario}", 
                     new { Id = nuevoIdUsuario });
+            });
+
+            
+            //Ruta (tipo: POST) del API que sirve para enviar un correo:
+            app.MapPost("/api/enviarcorreo/{correo:required}", async (string correo,
+                IUsuarioRepository usuarioRepo) =>
+            {
+
+                /* ******Es para validar si el correo tiene datos, si es nulo o esta en blanco
+                 * entonces el API tendria que dar un mensaje indicando que el correo es -
+                 * necesario. */
+                if (string.IsNullOrWhiteSpace(correo))
+                {
+                    return Results.BadRequest("¡ERROR: El correo es necesario!");
+                }
+
+                /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
+                 * al método para crear el usuario. */
+                var respuestaRecuperacion = await usuarioRepo.EnviarCorreo(correo);
+
+                //Si la variable respuestaRecuperacion es nulo quiere decir que no hay nada en la BD.
+                if (respuestaRecuperacion.ToString() is null || int.Parse(respuestaRecuperacion) == 0)
+                {
+                    return Results.BadRequest("¡ERROR: No se pudo recuperar la cuenta!");
+                }
+
+                // Si la variable respuestaRecuperacion es igual a 2
+                if (int.Parse(respuestaRecuperacion) == 2)
+                {
+                    return Results.BadRequest("¡ERROR: El correo electrónico que fue proporcionado no es válido!");
+                }
+
+                /* Si no hubo ningún problema, entonces dara el resultado como creado (que sería -
+                 * el código: #201), lo que indicaria que la solicitud POST se pudo realizar -
+                 * correctamente.*/
+                return Results.Created($"/api/enviarcorreo/{respuestaRecuperacion}",
+                    new { Id = int.Parse(respuestaRecuperacion) });
+            });
+
+            /*Ruta (tipo: POST) del API que sirve para enviar un correo:
+            app.MapPost("/api/enviarcodigo/{codigo:required}", async (string codigo,
+                IUsuarioRepository usuarioRepo) =>
+            {
+
+                // ******Es para validar si el correo tiene datos, si es nulo o esta en blanco
+                 * entonces el API tendria que dar un mensaje indicando que el correo es -
+                 * necesario.
+                if (string.IsNullOrWhiteSpace(codigo))
+                {
+                    return Results.BadRequest("¡ERROR: El código es necesario!");
+                }
+
+                // Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
+                 * al método para crear el usuario. 
+                var respuestaRecuperacion = await usuarioRepo.VerificarCodigo(codigo);
+
+                //Si la variable respuestaRecuperacion es nulo quiere decir que no hay nada en la BD.
+                if (respuestaRecuperacion != true)
+                {
+                    return Results.BadRequest("¡ERROR: El código ingresado esta incorrecto!");
+                }
+
+                // Si no hubo ningún problema, entonces dara el resultado como creado (que sería -
+                 * el código: #201), lo que indicaria que la solicitud POST se pudo realizar -
+                 * correctamente.
+                return Results.Created($"/api/enviarcodigo/{respuestaRecuperacion}",
+                    new { RespuestaFinal = respuestaRecuperacion});
+            });*/
+
+            //Ruta (tipo: GET) del API que sirve para traer un usuario por medio de un correo:
+            app.MapGet("/api/validarcodigo/{codigo:required}", (string codigo, 
+                IUsuarioRepository usuarioRepo) =>
+            {
+                if (string.IsNullOrWhiteSpace(codigo))
+                {
+                    return Results.BadRequest("¡ERROR: El código es necesario!");
+                }
+
+                var respuestaRecuperacion = usuarioRepo.VerificarCodigo(codigo);
+
+                //Si la variable respuestaRecuperacion es nulo quiere decir que no hay nada en la BD.
+                if (respuestaRecuperacion != true)
+                {
+                    return Results.BadRequest("¡ERROR: El código ingresado esta incorrecto!");
+                }
+
+                return Results.Ok(respuestaRecuperacion);
+            });
+
+            app.MapPut("/api/actualizarcontraseña", async (ExtensionUsuarioCreateDto usuarioDto,
+                IUsuarioRepository usuarioRepo) =>
+            {
+                /* */
+                if (string.IsNullOrWhiteSpace(usuarioDto.Correo_Electronico))
+                {
+                    return Results.BadRequest("¡ERROR: El correo es necesario!");
+                }
+
+
+                /*  */
+                if (string.IsNullOrWhiteSpace(usuarioDto.Contraseña) || usuarioDto.Contraseña.Trim().Length < 12)
+                {
+                    return Results.BadRequest("¡ERROR: La contraseña es necesaria!");
+                }
+
+                var respuestaActualizacion = await usuarioRepo.ActualizarContraseñaUsuario(usuarioDto.Contraseña, 
+                    usuarioDto.Correo_Electronico);
+
+                //Si la variable respuestaRecuperacion es nulo quiere decir que no hay nada en la BD.
+                if (respuestaActualizacion != true)
+                {
+                    return Results.BadRequest("¡ERROR: No se pudo cambiar la contraseña!");
+                }
+
+                return Results.Ok(respuestaActualizacion);
             });
 
 
