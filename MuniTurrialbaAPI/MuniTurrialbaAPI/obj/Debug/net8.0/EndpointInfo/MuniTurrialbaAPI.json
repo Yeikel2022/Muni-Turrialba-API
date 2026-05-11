@@ -2,13 +2,23 @@
   "openapi": "3.0.1",
   "info": {
     "title": "MuniTurrialbaAPI",
-    "version": "1.0"
+    "version": "v1"
   },
   "paths": {
     "/api/usuarios": {
       "get": {
         "tags": [
           "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -30,8 +40,60 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/validarcodigo/{codigo}": {
+      "get": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/iniciarsesion": {
+      "post": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtensionUsuarioCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -69,28 +131,6 @@
         "parameters": [
           {
             "name": "correo",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/validarcodigo/{codigo}": {
-      "get": {
-        "tags": [
-          "MuniTurrialbaAPI"
-        ],
-        "parameters": [
-          {
-            "name": "codigo",
             "in": "path",
             "required": true,
             "schema": {
@@ -195,6 +235,19 @@
         },
         "additionalProperties": false
       }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "apiKey",
+        "description": "Ingrese el token JWT como: Bearer {token}",
+        "name": "Authorization",
+        "in": "header"
+      }
     }
-  }
+  },
+  "security": [
+    {
+      "Bearer": [ ]
+    }
+  ]
 }

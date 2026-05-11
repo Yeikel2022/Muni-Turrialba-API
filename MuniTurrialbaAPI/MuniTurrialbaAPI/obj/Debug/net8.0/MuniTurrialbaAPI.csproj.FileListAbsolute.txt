@@ -80,3 +80,4 @@ C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba
 C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\obj\Debug\net8.0\MuniTurrialbaAPI.pdb
 C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\obj\Debug\net8.0\MuniTurrialbaAPI.genruntimeconfig.cache
 C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\obj\Debug\net8.0\ref\MuniTurrialbaAPI.dll
+C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
