@@ -2,13 +2,10 @@
 using Microsoft.Data.SqlClient;
 using MuniTurrialbaAPI.Entities;
 using MuniTurrialbaAPI.Models;
-using MuniTurrialbaAPI.Repositories.CodigoFormat;
-using System.Data;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
 namespace MuniTurrialbaAPI.Repositories
@@ -25,6 +22,7 @@ namespace MuniTurrialbaAPI.Repositories
          * validación del método: CrearUsuario. */
         int resultado_cedula;
         int resultado_correo;
+        int resultado_usuario;
         int resultado_Correo;
         string CodigoRestablecimiento;
         private string correoGuardado;
@@ -46,7 +44,7 @@ namespace MuniTurrialbaAPI.Repositories
         //            |==============| Zona de los métodos  |==============|
 
         /* Este método sirve para crear un usuario dentro de la base de datos. */
-        public async Task<int?> CrearUsuario(UsuarioCreateDto userdto)
+        public async Task<bool?> CrearUsuario(UsuarioCreateDto userdto)
         {
             //Es para saber si ese usuario existe en la BD, por medio de la cédula.
             bool resultado = ObtenerIDUsuario_PorCedula(userdto.Cedula);
@@ -64,7 +62,9 @@ namespace MuniTurrialbaAPI.Repositories
              * 
              * Quiere decir que ese usuario que se esta pasando por parametro no existe -
              * en la base de datos como tal. Entonces, si se podria registrar hacia la -
-             * base de datos.*/
+             * base de datos. 
+             * 
+             * Esto de igual manera aplica al correo electronico respectivamente. */
             if ((resultado != false && resultado_cedula == 0) && (resultadoCorreo != false && resultado_correo == 0))
             {
                 try
@@ -72,11 +72,9 @@ namespace MuniTurrialbaAPI.Repositories
                     //Esto es para poder enviar el dia y la hora en que se hizo el registro.
                     DateTime Fecha_Registro = DateTime.Now;
 
-                    //Para ejecutar el procedimiento almacenado. NOTA: Cambiar este solo por el EXECUTE.
-                    var nuevoUsuario = await conexionBD.QueryFirstAsync<dynamic>(
-                        //Procedimiento almacenado:
-                        "PROCED_CrearUsuarios",
-                        /*Se coloca los parametros*/
+                    //Para ejecutar el procedimiento almacenado.
+                    var nuevoUsuario = await conexionBD.ExecuteAsync("PROCED_CrearUsuarios",
+                        //Se coloca los parametros:
                         new
                         {
                             Nombre = userdto.Nombre,
@@ -89,13 +87,25 @@ namespace MuniTurrialbaAPI.Repositories
                             Contraseña = userdto.Contraseña,
                             Fecha_Creacion = Fecha_Registro,
                             Imagen_Perfil = userdto.Imagen_Perfil,
-                            Id_Rol = userdto.Id_Rol
+                            Id_Rol = userdto.Id_Rol,
+                            Leer = true,
+                            Crear = true,
+                            Actualizar = true,
+                            Eliminar = true
                         },
                         commandType: System.Data.CommandType.StoredProcedure);
 
-
+                    
                     //Esto es para mostrar al API el id del usuario.
-                    int id_Usuario = Convert.ToInt32(nuevoUsuario.Id);
+                    //int id_Usuario = Convert.ToInt32(nuevoUsuario.Id);
+                    var respuestaUsuario = nuevoUsuario.ToString();
+
+
+                    if (respuestaUsuario == null)
+                    {
+                        return false;
+                    }
+
 
                     Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
 
@@ -103,7 +113,7 @@ namespace MuniTurrialbaAPI.Repositories
                     conexionBD.Close();
                     Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
 
-                    return id_Usuario;
+                    return true;
                 }
                 catch (Exception error)
                 {
@@ -119,36 +129,40 @@ namespace MuniTurrialbaAPI.Repositories
             conexionBD.Close();
             Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
 
-            return 0;
+            return false;
 
         }//Fin del método.
 
-        /* Este método sirve para crear un usuario dentro de la base de datos. */
-        public async Task<string> EnviarCorreo(string correoParametrizado)
+        /* Este método sirve para enviar un correo electronico para recuperar la cuenta. */
+        public async Task<bool?> EnviarCorreo(string correoParametrizado)
         {
             //Es para saber si ese usuario existe en la BD, por medio de la correo.
             bool resultadoCorreo = ValidarUsuario_PorCorreo(correoParametrizado);
 
             //Crea la conexión hacia la BD.
-            using var conexionBD = CreateConnection();            
+            using var conexionBD = CreateConnection();
 
-            /* Si en la variable: resultado, que contiene la respuesta del método: -
-             * ObtenerIDUsuario_PorCedula, es diferente a falso, y también, si en la -
-             * variable: resultado_cedula es igual a 0. 
+            /* Si en la variable: resultadoCorreo, que contiene la respuesta del método: -
+             * ValidarUsuario_PorCorreo, es diferente a falso, y también, si en la -
+             * variable: resultado_Correo es igual a 0. 
              * 
-             * Quiere decir que ese usuario que se esta pasando por parametro no existe -
-             * en la base de datos como tal. Entonces, si se podria registrar hacia la -
-             * base de datos.*/
+             * Quiere decir que ese usuario que se esta pasando por parametro si existe -
+             * en la base de datos como tal. Entonces, si se podria enviar el correo con -
+             * el código de recuperación. */
             if (resultadoCorreo != false && resultado_Correo != 0)
             {
                 try
                 {
+                    /* Se resetea la variable para evitar problema. 
+                     * Esto por temas de buenas prácticas. */
                     CodigoRestablecimiento = null;
 
-                    //CodigoRestablecimiento = codigoFormato.CodigoGenerado(6);
+                    /* Se genera un código de recuperación aleatorio, -
+                     * esto con una longitud de 6 digitos. */
                     CodigoRestablecimiento = CodigoGenerado(6);
 
-
+                    /* Se coloca el correo originario (o transmisor) para -
+                     * poder enviar el mensaje con el código de restablecimiento. */
                     string correoOriginario = "pruebahola472@gmail.com";
                     string contraseñaOrginario = "ijqa pciw sxbm ilaq";
 
@@ -160,6 +174,10 @@ namespace MuniTurrialbaAPI.Repositories
                        "<p text-align: justify>" + "Aqui tienes tu código: " + CodigoRestablecimiento + "</p>" + "<p text-align: justify>" + "Muchas gracias por usar nuestros servicios. <br> MuniTurrialba.<br>" + "</p>" +
                        "<img src=\"https://www.muniturrialba.go.cr/images/speasyimagegallery/albums/1/images/turri7.jpg\" width=\"2000\" height=\"100\">" + "</body>";
 
+
+                    /* Aqui lo que se hace es crear el mensaje para el correo -
+                     * electrónico. Básicamente es lo que uno hace cuando quiere -
+                     * mandar un nuevo correo en Gmail o en Outlook. */
                     MailMessage mailMessage = new MailMessage
                     {
                         //Este es para indicar quien manda el mensaje
@@ -171,19 +189,28 @@ namespace MuniTurrialbaAPI.Repositories
                         //Este es para colocar todo el mensaje del correo.
                         Body = mensajeCorreo,
                         
-                        //Permite poder usar HTML.
+                        /* Permite poder usar HTML, ya que el mensaje del -
+                         * correo electrónico lo contiene. */
                         IsBodyHtml = true                      
                     };
 
 
-
-                    SmtpClient client = new SmtpClient("smtp.gmail.com", 587)
+                    /* Aqui lo que se hace es crear la conexión para enviar -
+                     * dicho correo respectivamente. 
+                     * 
+                     * NOTA: Se usa el smtp.gmail.com y el puerto: 587 porque -
+                     * se va a utilizar el servicio de Google Mail (Gmail), si -
+                     * se quiere usar otro servicio como el de Microsoft Outlook -
+                     * por ejemplo, entonces se tendria que colocar su puerto y -
+                     * smtp respectivo. */
+                    SmtpClient clienteSmtp = new SmtpClient("smtp.gmail.com", 587)
                     {
-                        /* Este es para colocar las credenciales del correo al cual usara el FROM. 
-                         * Además de colocar su contraseña*/
+                        /* Este es para colocar las credenciales del correo al -
+                         * cual usara el FROM. Además de colocar su contraseña. */
                         Credentials = new NetworkCredential(correoOriginario, contraseñaOrginario),
                         
-                        //Permite usar SSL para el cibrado.
+                        /* Permite usar SSL para el cifrado. Esto para tener -
+                         * más seguridad cuando se envie el correo electrónico. */
                         EnableSsl = true,
                         
                         //Esto indica como va a ser enviado el correo.
@@ -193,23 +220,32 @@ namespace MuniTurrialbaAPI.Repositories
                         UseDefaultCredentials = false                        
                     };
 
+
+                    /* Aqui lo que se hace es agregar el correo que el usuario -
+                     * habia colocado en el parametro, para que así finalmente -
+                     * se envie dicho mensaje y pueda recibir el código -
+                     * respectivamente. 
+                     * 
+                     * Ya después de haberse enviado el correo, entonces se limpia -
+                     * la configuración, esto para evitar problemas y porque también -
+                     * es una buena práctica al hacerlo. */
                     mailMessage.To.Add(correoParametrizado);
-                    client.Send(mailMessage);
+                    clienteSmtp.Send(mailMessage);
                     Debug.WriteLine("¡Se envio el mensaje!");
-                    client.Dispose();
+                    clienteSmtp.Dispose();
 
                     Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
                     //Se cierra la conexión por temas de buenas prácticas.
                     conexionBD.Close();
                     Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
-
-                    return "1";
+                    
+                    return true;
                 }
                 catch (Exception error)
                 {
                     Debug.WriteLine("No se pudo realizar correctamente la operación, " +
                         "esto por el siguiente error: " + error);
-                    return "0";
+                    return null;
                 }//Fin del try catch.
 
             }//Fin del IF.
@@ -219,16 +255,20 @@ namespace MuniTurrialbaAPI.Repositories
             conexionBD.Close();
             Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
 
-            return "2";
+            return false;
 
         }//Fin del método.
 
         
-        /* Este método sirve para crear un usuario dentro de la base de datos. */
+        /* Este método sirve para verficar si el código que se esta pasando por el -
+         * parametro es el mismo que se envio por el correo. */
         public bool VerificarCodigo(string codigoParametrizado)
         {            
             try
             {
+                /* Aqui lo que se hace es validar si el código que -
+                 * se paso por el parametro es el mismo que el que -
+                 * se envio por el correo electrónico. */
                 if (codigoParametrizado != CodigoRestablecimiento)
                 {
                     return false;
@@ -245,6 +285,8 @@ namespace MuniTurrialbaAPI.Repositories
 
         }//Fin del método.
 
+
+        /* Este método sirve para actualizar la contraseña de un usuario dentro de la base de datos. */
         public async Task<bool> ActualizarContraseñaUsuario(string contraseñaParametrizado, string correoParametrizado)
         {
             //Es para saber si ese usuario existe en la BD, por medio de la correo.
@@ -253,13 +295,20 @@ namespace MuniTurrialbaAPI.Repositories
             //Crea la conexión hacia la BD.
             using var conexionBD = CreateConnection();
 
-            /* S.*/
+            /* Si en la variable: resultadoCorreo, que contiene la respuesta del método: -
+             * ValidarUsuario_PorCorreo, es diferente a falso, y también, si en la -
+             * variable: resultado_Correo es diferente a 0. 
+             * 
+             * Quiere decir que ese usuario que se esta pasando por parametro si existe -
+             * en la base de datos como tal. Entonces, si se podria actualizar la contraseña -
+             * respectivamente. */
             if (resultadoCorreo != false && resultado_Correo != 0)
             {
                 try
                 {
+                    //Para ejecutar el procedimiento almacenado.
                     var resultadoActualizacion = await conexionBD.ExecuteAsync(
-                        "PROCED_Actualizar_Contraseña_X_IdUsuario",
+                        "PROCED_Actualizar_Contraseña_Usuario",
                         new
                         {
                             Correo_Electronico = correoParametrizado,
@@ -272,6 +321,7 @@ namespace MuniTurrialbaAPI.Repositories
                     conexionBD.Close();
                     Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
 
+                    //Para ver si se pudo actualizar:
                     Debug.WriteLine(resultadoActualizacion.ToString());
                     
                     return true;
@@ -291,8 +341,52 @@ namespace MuniTurrialbaAPI.Repositories
             Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
 
             return false;
-        }
+        }//Fin del método.
 
+
+        /* Este método sirve para verificar el usuario por medio del correo y la -
+         * contraseña que se esta pasando por parametro. */
+        public Task<UsuarioEntitie?>? VerificarUsuario(string correoParametrizado, string contraseñaParametrizado)
+        {
+            //Es para saber si ese usuario existe en la BD, por medio de la correo.
+            var resultadoUsuario = ObtenerUsuario_PorCorreo(correoParametrizado);
+
+            /* Aqui lo que se hace es validar si ese usuario existe. Si en dado -
+             * caso da un nulo, entonces quiere decir que no existe y devolvera -
+             * un nulo respectivamente. */
+            if (resultadoUsuario?.Result?.ToString() == null)
+            {
+                return null;
+            }
+
+
+            try
+            {
+                //Se obtiene el correo y la contraseña de ese usuario:
+                string correoUsuarioBD = resultadoUsuario.Result.Correo_Electronico;
+                string contraseñaUsuarioBD = resultadoUsuario.Result.Contraseña;
+
+
+                /* Aqui lo que se hace es validar si el correo y la contraseña que se -
+                 * pasaron por parametro son los mismos que estan en la base de datos. 
+                 * 
+                 * Si es así entonces devolvera al usuario, y en caso contrario devolveria -
+                 * un nulo respectivamente. */
+                if (correoUsuarioBD == correoParametrizado && contraseñaUsuarioBD == contraseñaParametrizado)
+                {
+                    return resultadoUsuario;
+                }
+
+                return null;
+            }
+            catch (Exception error)
+            {
+                Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                    "esto por el siguiente error: " + error);
+                return null;
+            }//Fin del try catch.
+
+        }//Fin del método.
 
 
 
@@ -311,7 +405,6 @@ namespace MuniTurrialbaAPI.Repositories
                     System.Data.CommandType.StoredProcedure);
 
                 Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
-                
                 conexionBD.Close();
                 Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
 
@@ -328,7 +421,7 @@ namespace MuniTurrialbaAPI.Repositories
 
 
         /* Este método sirve para obtener un usuario por medio del correo en la base de datos. */
-        public async Task<UsuarioEntitie?>? ObtenerUsuario_PorCorreo(string correoElectronico)
+        public async Task<UsuarioEntitie?>? ObtenerUsuario_PorCorreo(string correoParametrizado)
         {
             //Crea la conexión.
             using var conexionBD = CreateConnection();
@@ -340,7 +433,7 @@ namespace MuniTurrialbaAPI.Repositories
                     "PROCED_Consultar_Usuario_X_Correo",
                     new
                     { 
-                        Correo = correoElectronico 
+                        Correo = correoParametrizado
                     },
                     commandType: System.Data.CommandType.StoredProcedure);
 
@@ -364,8 +457,7 @@ namespace MuniTurrialbaAPI.Repositories
                     return null;
                 }
 
-                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
-                
+                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);                
                 //Para cerrar la conexión, esto por temas de buenas prácticas.
                 conexionBD.Close();
                 Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
@@ -377,8 +469,9 @@ namespace MuniTurrialbaAPI.Repositories
                 Debug.WriteLine("No se pudo realizar correctamente la operación, " +
                         "esto por el siguiente error: " + error);
                 return null;
-            }
-        }
+            }//Fin del try catch.
+
+        }//Fin del método.
 
 
         /* Este método sirve para obtener el ID de un usuario por medio de la cédula, -
@@ -409,7 +502,7 @@ namespace MuniTurrialbaAPI.Repositories
 
                     /* Guarda el ID que trae el procedimiento almacenado. 
                      * Además de verificar si trae algo la variable: "usuario_Obtenido" -
-                     * respectivamente.*/
+                     * respectivamente. */
                     string? usuarioId = usuario_Obtenido.Result?.Id.ToString();
 
 
@@ -419,7 +512,7 @@ namespace MuniTurrialbaAPI.Repositories
                      * 
                      * De modo que en dicho método, puedan tener conocimiento de que si existe un -
                      * usuario como tal en la base de datos, y en consecuencia, este no permita -
-                     * que se realice la creación de ese dato respectivamente.*/
+                     * que se realice la creación de ese dato respectivamente. */
                     if (usuarioId != null)
                     {
                         resultado_cedula = usuario_Obtenido.Result!.Id;
@@ -435,8 +528,8 @@ namespace MuniTurrialbaAPI.Repositories
 
                     /* Ahora, si no entra en el IF, significa que no existe un usuario con esa -
                      * cédula respectiva. Por ende, no seria necesario modificar la variable: -
-                     * resultado_cedula, para que guarde ese ID, esto porque el resultado ya -
-                     * esta indicando que no existe como tal (osea que es nulo).
+                     * resultado_cedula para que guarde ese ID, esto porque el resultado ya esta -
+                     * indicando que no existe como tal (osea que es nulo).
                      * 
                      * Entonces, en este caso simplemente se mantiene asi como esta la variable -
                      * (osea cero), y se envia un true al método: CrearUsuario. De modo que en -
@@ -465,6 +558,9 @@ namespace MuniTurrialbaAPI.Repositories
 
         }//Fin del método.
 
+
+        /* Este método sirve para obtener el ID de un usuario por medio del correo, -
+         * esto por medio de la base de datos respectivamente. */
         public bool ObtenerIDUsuario_PorCorreo(string correoParametrizado)
         {
             //Crea la conexión hacia la BD.
@@ -495,7 +591,7 @@ namespace MuniTurrialbaAPI.Repositories
 
                 /* Guarda el ID que trae el procedimiento almacenado. 
                  * Además de verificar si trae algo la variable: "usuario_Obtenido" -
-                 * respectivamente.*/
+                 * respectivamente. */
                 string? usuarioId = usuario_Obtenido.Result?.Id.ToString();
 
 
@@ -505,13 +601,12 @@ namespace MuniTurrialbaAPI.Repositories
                  * 
                  * De modo que en dicho método, puedan tener conocimiento de que si existe un -
                  * usuario como tal en la base de datos, y en consecuencia, este no permita -
-                 * que se realice la creación de ese dato respectivamente.*/
+                 * que se realice la creación de ese dato respectivamente. */
                 if (usuarioId != null)
                 {
                     resultado_correo = usuario_Obtenido.Result!.Id;
 
                     Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
-
                     conexionBD.Close();
                     Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
 
@@ -521,8 +616,8 @@ namespace MuniTurrialbaAPI.Repositories
 
                 /* Ahora, si no entra en el IF, significa que no existe un usuario con ese -
                  * correo electronico. Por ende, no seria necesario modificar la variable: -
-                 * resultado_correo, para que guarde ese ID, esto porque el resultado ya -
-                 * esta indicando que no existe como tal (osea que es nulo).
+                 * resultado_correo para que guarde ese ID, esto porque el resultado ya esta -
+                 * indicando que no existe como tal (osea que es nulo).
                  * 
                  * Entonces, en este caso simplemente se mantiene asi como esta la variable -
                  * (osea cero), y se envia un true al método: CrearUsuario. De modo que en -
@@ -547,6 +642,9 @@ namespace MuniTurrialbaAPI.Repositories
 
         }//Fin del método.
 
+
+        /* Este método sirve para validar el usuario por medio del correo electrónico, -
+         * esto por medio de la base de datos respectivamente. */
         public bool ValidarUsuario_PorCorreo(string correoParametrizado)
         {
             //Crea la conexión hacia la BD.
@@ -583,23 +681,13 @@ namespace MuniTurrialbaAPI.Repositories
 
                 /* Si el ID del usuario que se obtuvo desde la BD es distinto a nulo, significa -
                  * que ya existe un usuario con ese correo, por lo que, en este caso se guarda -
-                 * ese ID y se envia un falso al método: CrearUsuario. 
+                 * ese ID y se envia un falso a los métodos: EnviarCorreo y ActualizarContraseñaUsuario. 
                  * 
-                 * De modo que en dicho método, puedan tener conocimiento de que si existe un -
-                 * usuario como tal en la base de datos, y en consecuencia, este no permita -
-                 * que se realice la creación de ese dato respectivamente.*/
+                 * De modo que en dichos métodos, puedan tener conocimiento de que si existe un -
+                 * usuario como tal en la base de datos, y en consecuencia, estos no permitan -
+                 * que se realicen las acciones correspondientes. */
                 if (usuarioId == null)
-                {                    
-                    /* Ahora, si no entra en el IF, significa que no existe un usuario con ese -
-                     * correo electronico. Por ende, no seria necesario modificar la variable: -
-                     * resultado_correo, para que guarde ese ID, esto porque el resultado ya -
-                     * esta indicando que no existe como tal (osea que es nulo).
-                     * 
-                     * Entonces, en este caso simplemente se mantiene asi como esta la variable -
-                     * (osea cero), y se envia un true al método: CrearUsuario. De modo que en -
-                     * dicho método, puedan tener conocimiento de que ese usuario no existe como -
-                     * tal en la base de datos, y en consecuencia, pueda permitir la creación de -
-                     * ese dato respectivamente. */
+                {
                     Debug.WriteLine("Para ver la variable resultado_correo: " + resultado_Correo);
                     Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
 
@@ -608,9 +696,12 @@ namespace MuniTurrialbaAPI.Repositories
                     return false;
                 }
 
-                resultado_Correo = usuario_Obtenido.Result!.Id;
-                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
 
+                /* Si no entra quiere decir que no existe, por lo que lo guarda para que los -
+                 * métodos que fueron mencionados anteriormente puedan saber sobre dicho aspecto. */
+                resultado_Correo = usuario_Obtenido.Result!.Id;
+
+                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
                 conexionBD.Close();
                 Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
 
@@ -627,21 +718,36 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.        
 
 
+
+        /* Este método sirve para obtener un código generado de forma aleatoria respectivamente. */
         private string CodigoGenerado(int longitudParametrizada)
         {
+            //Esto es la cadena que se usara para el código de recuperación.
             const string cadenaCaracteres = "WfjndFin*MBfu*HAdPNe$GTm(L5cf{Lc!94SLCZG+:7bY&U2+PnM(ER9Nurk.bZ&6xxzcw:A!*W?-xnA:]%u=yLmCSApY2K[5K##";
 
+            /* Aqui lo que se hace es crear el contructor que ayudara hacer el código, y -
+             * también el random que nos ayudara para poder utilizar cualquier caracter -
+             * de la cadena antes mencionada. */
             StringBuilder constructorString = new StringBuilder();
             Random random = new Random();
 
+
+            /* Aqui lo que se hace es verificar la longitud que se mando por parametro -
+             * (osea 6), y en base a eso, entonces lo que va a hacer es utilizar cualquier -
+             * caracter de la cadena, y con el constructor, agregarla a un nuevo texto. -
+             * De forma que cuando se llegue a los 6 digitos, ya se tenga un código de -
+             * recuperación totalmente nuevo y generado de forma aleatoria respectivamente. */
             for (int i = 0; i < longitudParametrizada; i++)
             {
                 int index = random.Next(cadenaCaracteres.Length);
                 constructorString.Append(cadenaCaracteres[index]);
             }
 
+
+            /* Aqui lo que se hace es devolver el código de recuperación ya generado. */
             return constructorString.ToString();
-        }
+
+        } //Fin del método.
 
 
         //|========================================| FIN DE LA CLASE |========================================|

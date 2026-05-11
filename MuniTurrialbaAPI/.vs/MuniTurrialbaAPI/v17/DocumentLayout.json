@@ -13,7 +13,7 @@
       "VerticalTabListWidth": 256,
       "DocumentGroups": [
         {
-          "DockedWidth": 708,
+          "DockedWidth": 796,
           "SelectedChildIndex": 1,
           "Children": [
             {
@@ -28,9 +28,9 @@
               "RelativeDocumentMoniker": "MuniTurrialbaAPI\\Program.cs",
               "ToolTip": "C:\\Users\\USUARIO\\Documents\\Repositorios-GitHub\\API-Muni-Turrialba\\Muni-Turrialba-API\\MuniTurrialbaAPI\\MuniTurrialbaAPI\\Program.cs",
               "RelativeToolTip": "MuniTurrialbaAPI\\Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEgCAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-28T01:01:37.233Z",
+              "WhenOpened": "2026-04-29T18:21:30.459Z",
               "EditorCaption": ""
             }
           ]
