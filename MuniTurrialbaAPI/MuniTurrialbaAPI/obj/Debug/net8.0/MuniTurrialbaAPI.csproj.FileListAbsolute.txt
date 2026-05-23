@@ -81,3 +81,9 @@ C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba
 C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\obj\Debug\net8.0\MuniTurrialbaAPI.genruntimeconfig.cache
 C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\obj\Debug\net8.0\ref\MuniTurrialbaAPI.dll
 C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\bin\Debug\net8.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\bin\Debug\net8.0\QRCoder.dll
+C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\bin\Debug\net8.0\System.Drawing.Common.dll
+C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\bin\Debug\net8.0\runtimes\win\lib\net6.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\bin\Debug\net8.0\runtimes\unix\lib\net6.0\System.Drawing.Common.dll
+C:\Users\USUARIO\Documents\Repositorios-GitHub\API-Muni-Turrialba\Muni-Turrialba-API\MuniTurrialbaAPI\MuniTurrialbaAPI\bin\Debug\net8.0\runtimes\win\lib\net6.0\System.Drawing.Common.dll

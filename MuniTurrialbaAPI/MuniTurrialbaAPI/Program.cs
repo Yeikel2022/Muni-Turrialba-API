@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MuniTurrialbaAPI.Models;
 using MuniTurrialbaAPI.Repositories;
+using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
 
@@ -249,6 +250,91 @@ namespace MuniTurrialbaAPI
                  * de indicar el código: #200. */
                 return Results.Ok(respuestaRecuperacion);
             });
+
+
+            //Ruta (tipo: GET) del API que sirve obtener el código QR con los datos del usuario:
+            app.MapGet("/api/obtenerQR", (string nombre, string apellidos, string correo, string tokenAcceso,
+                IUsuarioRepository usuarioRepo, IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2 || RolUsuario == 3)
+                {
+                    /* Es para validar si el nombre tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el nombre es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(nombre))
+                    {
+                        return Results.BadRequest("El nombre es necesario.");
+                    }
+
+
+                    /* Es para validar si los apellidos tienen datos, si es nulo o esta en -
+                     * blanco entonces el API tendria que dar un mensaje indicando que los -
+                     * apellidos son necesarios. */
+                    if (string.IsNullOrWhiteSpace(apellidos))
+                    {
+                        return Results.BadRequest("Los apellidos son necesarios.");
+                    }
+
+
+                    /* Es para validar si el correo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el correo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(correo))
+                    {
+                        return Results.BadRequest("El correo es necesario.");
+                    }
+
+
+                    /* Aquí lo que se indica es que llama al método: "CrearCodigoQR()" -
+                     * para crear el código QR. 
+                     * 
+                     * Ahora, si en la variable: "codigoQR" es nulo, entonces quiere decir -
+                     * que no se pudo crear dicho código. Por lo tanto se manda un error al -
+                     * usuario respectivamente. */
+                    var codigoQR = usuarioRepo.CrearCodigoQR(nombre, apellidos, correo);
+                    if (codigoQR.ToString() == null)
+                    {
+                        return Results.NotFound("No se pudo obtener el código QR.");
+                    }
+
+
+                    /* Aquí lo que se indica es que si en la variable: "codigoQR" es falso, -
+                     * entonces quiere decir que ese correo no existe en la BD. Por lo tanto -
+                     * se manda un error al usuario respectivamente. */
+                    if (codigoQR.ToString() == "false")
+                    {
+                        return Results.NotFound("El correo proporcionado esta incorrecto.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces se crearia el código QR del usuario -
+                     * respectivamente. Además de indicar un código #200. */
+                    return Results.Ok(codigoQR);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
 
 
             //Ruta (tipo: POST) del API que sirve para que el usuario pueda iniciar sesión:
@@ -619,6 +705,93 @@ namespace MuniTurrialbaAPI
                  * contraseña de ese usuario. Además de indicar el código: #200. */
                 return Results.Ok(respuestaActualizacion);
             });
+
+
+            //Ruta (tipo: PUT) del API que sirve para cambiar la foto de perfil:
+            app.MapPut("/api/cambiarFoto", async (string tokenAcceso, HttpRequest peticion,
+                IUsuarioRepository usuarioRepo, IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2 || RolUsuario == 3)
+                {
+                    /* Aqui lo que se esta haciendo es que con la variable: "peticion", nos -
+                     * ayudaria a obtener la petición (o solicitud) HTTP que fue solicitado -
+                     * por el usuario, que en este caso es cambiar la foto de perfil. Luego -
+                     * de eso, con esa variable podriamos leer el cuerpo de la solicitud (que -
+                     * seria el contenido que viene) a traves del comando: ReadFormAsync(), y -
+                     * lo devolveria como una colección: Task<IFormCollection>.
+                     * 
+                     *
+                     * Ahora, gracias a esa colección, podriamos finalmente extraer la imagen -
+                     * que esta almacenada en el campo: "Imagen_Perfil", de forma que ahora se -
+                     * pueda hacer el procedimiento necesario para cambiar la imagen de perfil -
+                     * respectivamente. */
+                    var archivo = await peticion.ReadFormAsync();
+                    var imagenPerfil = archivo["Imagen_Perfil"].ToString();
+
+                    /* Es para validar si la imagen tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que la imagen es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(imagenPerfil))
+                    {
+                        return Results.BadRequest("La foto es necesaria.");
+                    }
+
+                    /* Aqui lo que se hace es obtener el claim que tiene como nombre: "correo" y -
+                     * guardarlo en la variable: "correoUsuario". Esto se hace porque se necesita -
+                     * enviar ese correo del usuario para así ver si se puede cambiar o no la foto -
+                     * de perfil. */
+                    var correoUsuario = respuestaValidarToken.FindFirst("correo")!.Value;
+
+                    /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama al método -
+                     * para actualizar (o cambiar) la foto de perfil del usuario. Ahora, si en la variable: -
+                     * "respuesta" es nulo, entonces quiere decir que no se pudo cambiar la imagen en la BD. 
+                     * 
+                     * Por lo tanto se manda un error al usuario respectivamente. */
+                    var respuesta = await usuarioRepo.ActualizarFotoPerfil(imagenPerfil, correoUsuario);
+                    if (respuesta == null)
+                    {
+                        return Results.BadRequest("No se pudo actualizar la foto de perfil.");
+                    }
+
+                    /* Por otro lado, también se valida si en la variable: "respuesta" es igual -
+                     * a falso, y si lo es entonces quiere decir que ese correo no es valido en -
+                     * la base de datos. Por lo tanto se manda un error al usuario respectivamente. */
+                    if (respuesta == false)
+                    {
+                        return Results.BadRequest("El correo electrónico que fue proporcionado no es válido.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces indicaria que el correo electrónico -
+                     * proporcionado ha sido el correcto y que enviaria una respuesta sobre la -
+                     * actualización de dicho foto de perfil. Además de indicar el código: #200. */
+                    return Results.Ok(respuesta);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
 
 
             //Comando para ejecutar el proyecto:

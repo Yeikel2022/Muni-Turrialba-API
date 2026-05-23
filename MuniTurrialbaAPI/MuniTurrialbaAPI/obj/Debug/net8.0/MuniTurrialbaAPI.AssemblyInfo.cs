@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MuniTurrialbaAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+27c342d5b1fb046fa63b6db84f115c8fb678aa88")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b60f49a9751ebc5650207ceed66dd817a37d0b5f")]
 [assembly: System.Reflection.AssemblyProductAttribute("MuniTurrialbaAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MuniTurrialbaAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

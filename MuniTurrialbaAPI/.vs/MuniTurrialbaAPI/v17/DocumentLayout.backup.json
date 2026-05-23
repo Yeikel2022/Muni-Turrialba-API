@@ -5,6 +5,14 @@
     {
       "AbsoluteMoniker": "D:0:0:{57FF6B3C-1F6F-4A4A-9FFC-471F3119DF36}|MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj|c:\\users\\usuario\\documents\\repositorios-github\\api-muni-turrialba\\muni-turrialba-api\\muniturrialbaapi\\muniturrialbaapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{57FF6B3C-1F6F-4A4A-9FFC-471F3119DF36}|MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj|solutionrelative:muniturrialbaapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{57FF6B3C-1F6F-4A4A-9FFC-471F3119DF36}|MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj|c:\\users\\usuario\\documents\\repositorios-github\\api-muni-turrialba\\muni-turrialba-api\\muniturrialbaapi\\muniturrialbaapi\\repositories\\usuariorepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{57FF6B3C-1F6F-4A4A-9FFC-471F3119DF36}|MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj|solutionrelative:muniturrialbaapi\\repositories\\usuariorepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{57FF6B3C-1F6F-4A4A-9FFC-471F3119DF36}|MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj|c:\\users\\usuario\\documents\\repositorios-github\\api-muni-turrialba\\muni-turrialba-api\\muniturrialbaapi\\muniturrialbaapi\\repositories\\iusuariorepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{57FF6B3C-1F6F-4A4A-9FFC-471F3119DF36}|MuniTurrialbaAPI\\MuniTurrialbaAPI.csproj|solutionrelative:muniturrialbaapi\\repositories\\iusuariorepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -28,9 +36,35 @@
               "RelativeDocumentMoniker": "MuniTurrialbaAPI\\Program.cs",
               "ToolTip": "C:\\Users\\USUARIO\\Documents\\Repositorios-GitHub\\API-Muni-Turrialba\\Muni-Turrialba-API\\MuniTurrialbaAPI\\MuniTurrialbaAPI\\Program.cs",
               "RelativeToolTip": "MuniTurrialbaAPI\\Program.cs",
-              "ViewState": "AgIAAHkAAAAAAAAAAAAAAEgCAAAMAAAAAAAAAA==",
+              "ViewState": "AgIAACMBAAAAAAAAAAAAAMABAAAyAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-04-29T18:21:30.459Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "IUsuarioRepository.cs",
+              "DocumentMoniker": "C:\\Users\\USUARIO\\Documents\\Repositorios-GitHub\\API-Muni-Turrialba\\Muni-Turrialba-API\\MuniTurrialbaAPI\\MuniTurrialbaAPI\\Repositories\\IUsuarioRepository.cs",
+              "RelativeDocumentMoniker": "MuniTurrialbaAPI\\Repositories\\IUsuarioRepository.cs",
+              "ToolTip": "C:\\Users\\USUARIO\\Documents\\Repositorios-GitHub\\API-Muni-Turrialba\\Muni-Turrialba-API\\MuniTurrialbaAPI\\MuniTurrialbaAPI\\Repositories\\IUsuarioRepository.cs",
+              "RelativeToolTip": "MuniTurrialbaAPI\\Repositories\\IUsuarioRepository.cs",
+              "ViewState": "AgIAAA4AAAAAAAAAAAA3wBgAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-11T23:11:42.399Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "UsuarioRepository.cs",
+              "DocumentMoniker": "C:\\Users\\USUARIO\\Documents\\Repositorios-GitHub\\API-Muni-Turrialba\\Muni-Turrialba-API\\MuniTurrialbaAPI\\MuniTurrialbaAPI\\Repositories\\UsuarioRepository.cs",
+              "RelativeDocumentMoniker": "MuniTurrialbaAPI\\Repositories\\UsuarioRepository.cs",
+              "ToolTip": "C:\\Users\\USUARIO\\Documents\\Repositorios-GitHub\\API-Muni-Turrialba\\Muni-Turrialba-API\\MuniTurrialbaAPI\\MuniTurrialbaAPI\\Repositories\\UsuarioRepository.cs",
+              "RelativeToolTip": "MuniTurrialbaAPI\\Repositories\\UsuarioRepository.cs",
+              "ViewState": "AgIAAJMAAAAAAAAAAAAAAMABAAA3AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-11T23:12:50.274Z",
               "EditorCaption": ""
             }
           ]
