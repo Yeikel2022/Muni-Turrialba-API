@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using MuniTurrialbaAPI.Entities;
 using MuniTurrialbaAPI.Models;
+using QRCoder;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Mail;
@@ -24,6 +25,8 @@ namespace MuniTurrialbaAPI.Repositories
         int resultado_correo;
         int resultado_usuario;
         int resultado_Correo;
+        int Resultado_Correo;
+        int Resultado_Correo_QR;
         string CodigoRestablecimiento;
         private string correoGuardado;
 
@@ -132,6 +135,77 @@ namespace MuniTurrialbaAPI.Repositories
             return false;
 
         }//Fin del método.
+
+
+        /* Este método sirve para crear un codigo QR de un usuario. */
+        public string? CrearCodigoQR(string nombreParametrizado, string apellidosParametrizados, string correoParametrizado)
+        {
+            //Es para saber si ese usuario existe en la BD, por medio del correo.
+            bool resultadoCorreo = ValidarUsuario_PorCorreo(correoParametrizado);
+
+            /* Si en la variable: resultadoCorreo, que contiene la respuesta del método: -
+             * ValidarUsuario_PorCorreo, es diferente a falso, y también, si en la -
+             * variable: Resultado_Correo_QR es diferente a 0. 
+             * 
+             * Quiere decir que ese usuario que se esta pasando por parametro si existe -
+             * en la base de datos como tal. Entonces, si se podria crear el código QR -
+             * respectivamente. */
+            if (resultadoCorreo != false && Resultado_Correo_QR != 0)
+            {
+                try
+                {
+                    /* Es un generador que nos permitira hacer el código -
+                     * QR del usuario. En otras palabras, es como si se -
+                     * estuviera usando un constructor básicamente. */
+                    QRCodeGenerator generadorQR = new QRCodeGenerator();
+
+                    /* Aqui lo que se esta haciendo es crear el código QR con los datos -
+                     * que vamos a proporcionar en dicho código. Osea, basicamente seria -
+                     * su estructura. De ahi que se esta usando los comandos QRCodeData y -
+                     * el CreateQRCode que tiene el generadorQR respectivamente. 
+                     *
+                     * Además, también con ayuda del comando: "QRCodeGenerator.ECCLevel.H", -
+                     * se estaria colocando un nivel H en dicho QR (siendo este el nivel más -
+                     * alto), esto lo que significa es que ese nivel H, nos daria un 30% más -
+                     * de probabilidad de recuperar los datos que están en ese código QR. -
+                     * Esto en dado caso que dicho código se llegue a dañar o incluso que -
+                     * se llegue a corromper respectivamente, de ahi el porque se coloca -
+                     * ese nivel. */
+                    QRCodeData datosCodificar = generadorQR.CreateQrCode(
+                        "Nombre: " + nombreParametrizado +
+                        "\nApellidos: " + apellidosParametrizados +
+                        "\nCorreo: " + correoParametrizado, QRCodeGenerator.ECCLevel.H);
+
+                    /* Luego, aqui lo que se esta haciendo es una instancia de tipo: "PngByteQRCode" -
+                     * donde se esta pasando los datos que se definieron para el código QR, para así -
+                     * tener, un arreglo (o lista) de bytes en un formato PNG. */
+                    PngByteQRCode codigoQR = new PngByteQRCode(datosCodificar);
+
+                    /* Y por ultimo, lo unico que faltaria es tomar la variable: "codigoQR", que contiene -
+                     * el PngByteQRCode, y usar el método: GetGraphic(20), para poder crear finalmente el -
+                     * código QR como una imagen de formato PNG. Y después se codifica dicho codigo QR, en -
+                     * un formato de 64 caracteres, y se devuelve al usuario respectivamente.
+                     * 
+                     * Eso si, se coloco un 20 en el método: GetGraphic(), porque representa la cantidad de -
+                     * pixeles que se quiere dibujar para cada modulo en blanco y negro, osea, basicamente -
+                     * serian los pedacitos que conforman el QR en blanco y negro. */
+                    byte[] codigoListo = codigoQR.GetGraphic(20);
+                    string modeloQR = Convert.ToBase64String(codigoListo);
+
+                    return modeloQR;
+                }
+                catch (Exception error)
+                {
+                    Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                        "esto por el siguiente error: " + error);
+                    return null;
+                }//Fin del try catch.
+
+            }//Fin del IF.
+
+            return "false";
+        }//Fin del método.
+
 
         /* Este método sirve para enviar un correo electronico para recuperar la cuenta. */
         public async Task<bool?> EnviarCorreo(string correoParametrizado)
@@ -260,8 +334,8 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.
 
         
-        /* Este método sirve para verficar si el código que se esta pasando por el -
-         * parametro es el mismo que se envio por el correo. */
+        /* Este método sirve para verficar si el código que se esta pasando por el parametro es el -
+         * mismo que se envio por el correo. */
         public bool VerificarCodigo(string codigoParametrizado)
         {            
             try
@@ -344,8 +418,77 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.
 
 
-        /* Este método sirve para verificar el usuario por medio del correo y la -
-         * contraseña que se esta pasando por parametro. */
+        /* Este método sirve para actualizar la foto de perfil de un usuario dentro de la base de datos. */
+        public async Task<bool?> ActualizarFotoPerfil(string fotoParametrizada, string correoParametrizado)
+        {
+            //Es para saber si ese usuario existe en la BD, por medio de la correo.
+            bool resultadoCorreo = ValidarUsuario_PorCorreo(correoParametrizado);
+
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            /* Si en la variable: resultadoCorreo, que contiene la respuesta del método: -
+             * ValidarUsuario_PorCorreo, es diferente a falso, y también, si en la -
+             * variable: Resultado_Correo es diferente a 0. 
+             * 
+             * Quiere decir que ese usuario que se esta pasando por parametro si existe -
+             * en la base de datos como tal. Entonces, si se podria actualizar la foto -
+             * de perfil respectivamente. */
+            if (resultadoCorreo != false && Resultado_Correo != 0)
+            {
+                try
+                {
+                    /* Aqui lo que se hace es decodificar la foto que se paso por parametro, -
+                     * a un arreglo de bytes. Esto porque en la BD se maneja un VARBINARY, -
+                     * entonces ocupa si o si, ese arreglo de bytes. 
+                     *
+                     * Además, que en la documentación de Microsoft, mencionan que con -
+                     * este comando: "Convert.FromBase64String(fotoParametrizada)", nos -
+                     * devolvera un arreglo (o una lista) de bytes, de ahí el porque se -
+                     * dice que se esta decodificando la foto respectivamente. */
+                    byte[] imagen = Convert.FromBase64String(fotoParametrizada);
+                    Debug.WriteLine("Para ver la variable imagen: " + imagen);
+
+                    //Para ejecutar el procedimiento almacenado.
+                    var resultadoActualizacion = await conexionBD.ExecuteAsync(
+                        "PROCED_Actualizar_ImagenPerfil_Usuario",
+                        new
+                        {
+                            Correo_Electronico = correoParametrizado,
+                            Imagen_Perfil = imagen
+                        },
+                        commandType: System.Data.CommandType.StoredProcedure);
+
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                    //Se cierra la conexión por temas de buenas prácticas.
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    //Para ver si se pudo actualizar:
+                    Debug.WriteLine(resultadoActualizacion.ToString());
+
+                    return true;
+                }
+                catch (Exception error)
+                {
+                    Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                        "esto por el siguiente error: " + error);
+                    return null;
+                }//Fin del try catch.
+
+            }//Fin del IF.
+
+            Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+            conexionBD.Close();
+            Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+            return false;
+        }//Fin del método.
+
+
+        /* Este método sirve para verificar el usuario por medio del correo y la contraseña que se -
+         * esta pasando por parametro. */
         public Task<UsuarioEntitie?>? VerificarUsuario(string correoParametrizado, string contraseñaParametrizado)
         {
             //Es para saber si ese usuario existe en la BD, por medio de la correo.
@@ -474,8 +617,8 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.
 
 
-        /* Este método sirve para obtener el ID de un usuario por medio de la cédula, -
-         * esto por medio de la base de datos respectivamente. */
+        /* Este método sirve para obtener el ID de un usuario por medio de la cédula, esto por medio -
+         * de la base de datos respectivamente. */
         public bool ObtenerIDUsuario_PorCedula(string cedulaParametrizada)
         {
             //Crea la conexión hacia la BD.
@@ -559,8 +702,8 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.
 
 
-        /* Este método sirve para obtener el ID de un usuario por medio del correo, -
-         * esto por medio de la base de datos respectivamente. */
+        /* Este método sirve para obtener el ID de un usuario por medio del correo, esto por medio -
+         * de la base de datos respectivamente. */
         public bool ObtenerIDUsuario_PorCorreo(string correoParametrizado)
         {
             //Crea la conexión hacia la BD.
@@ -643,8 +786,8 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.
 
 
-        /* Este método sirve para validar el usuario por medio del correo electrónico, -
-         * esto por medio de la base de datos respectivamente. */
+        /* Este método sirve para validar el usuario por medio del correo electrónico, esto por medio -
+         * de la base de datos respectivamente. */
         public bool ValidarUsuario_PorCorreo(string correoParametrizado)
         {
             //Crea la conexión hacia la BD.
@@ -661,6 +804,8 @@ namespace MuniTurrialbaAPI.Repositories
             {
                 //Primero hay que resetear esta variable para evitar una confusión más adelante.
                 resultado_Correo = 0;
+                Resultado_Correo = 0;
+                Resultado_Correo_QR = 0;
 
                 //Para ejecutar el procedimiento almacenado.
                 var usuario_Obtenido = conexionBD.QueryFirstOrDefaultAsync<UsuarioEntitie>(
@@ -681,7 +826,8 @@ namespace MuniTurrialbaAPI.Repositories
 
                 /* Si el ID del usuario que se obtuvo desde la BD es distinto a nulo, significa -
                  * que ya existe un usuario con ese correo, por lo que, en este caso se guarda -
-                 * ese ID y se envia un falso a los métodos: EnviarCorreo y ActualizarContraseñaUsuario. 
+                 * ese ID y se envia un falso a los métodos: EnviarCorreo, ActualizarContraseñaUsuario -
+                 * y CrearCodigoQR. 
                  * 
                  * De modo que en dichos métodos, puedan tener conocimiento de que si existe un -
                  * usuario como tal en la base de datos, y en consecuencia, estos no permitan -
@@ -700,6 +846,8 @@ namespace MuniTurrialbaAPI.Repositories
                 /* Si no entra quiere decir que no existe, por lo que lo guarda para que los -
                  * métodos que fueron mencionados anteriormente puedan saber sobre dicho aspecto. */
                 resultado_Correo = usuario_Obtenido.Result!.Id;
+                Resultado_Correo = usuario_Obtenido.Result!.Id;
+                Resultado_Correo_QR = usuario_Obtenido.Result!.Id;
 
                 Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
                 conexionBD.Close();

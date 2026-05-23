@@ -14,12 +14,16 @@ namespace MuniTurrialbaAPI.Repositories
 
         Task<bool?> CrearUsuario(UsuarioCreateDto userdto);
 
+        string? CrearCodigoQR(string nombreParametrizado, string apellidosParametrizados, string correoParametrizado);
+
         Task<bool?> EnviarCorreo(string correoParametrizado);
         
         bool VerificarCodigo(string codigoParametrizado);
 
         Task<bool> ActualizarContraseñaUsuario(string contraseñaParametrizado, string correoParametrizado);
 
+        Task<bool?> ActualizarFotoPerfil(string fotoParametrizada, string correoParametrizado);
+        
         Task<UsuarioEntitie?>? VerificarUsuario(string correoParametrizado, string contraseñaParametrizado);
 
 
