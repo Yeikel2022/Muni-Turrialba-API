@@ -12,7 +12,7 @@ namespace MuniTurrialbaAPI.Repositories
         /* NOTA: Se le coloco el: " ? " en ciertos métodos para que, cuando se usen, -
          * estos puedan aceptar valores nulos. */
 
-        Task<bool?> CrearUsuario(UsuarioCreateDto userdto);
+        Task<bool?> CrearUsuario(UsuarioCreateDto userdto, bool tipo);
 
         string? CrearCodigoQR(string nombreParametrizado, string apellidosParametrizados, string correoParametrizado);
 
@@ -23,7 +23,11 @@ namespace MuniTurrialbaAPI.Repositories
         Task<bool> ActualizarContraseñaUsuario(string contraseñaParametrizado, string correoParametrizado);
 
         Task<bool?> ActualizarFotoPerfil(string fotoParametrizada, string correoParametrizado);
+
+        Task<bool?> ActualizarUsuario(UsuarioCreateDto userdto, string cedulaParametrizada);
         
+        Task<bool?> EliminarUsuario(int idUsuarioParametrizado);
+
         Task<UsuarioEntitie?>? VerificarUsuario(string correoParametrizado, string contraseñaParametrizado);
 
 
@@ -36,6 +40,8 @@ namespace MuniTurrialbaAPI.Repositories
         bool ObtenerIDUsuario_PorCorreo(string correoParametrizado);    
 
         bool ValidarUsuario_PorCorreo(string correoParametrizado);
+
+        bool? VerificarUsuario_ParaActualizar(string cedulaParametrizada);
 
     }
 }

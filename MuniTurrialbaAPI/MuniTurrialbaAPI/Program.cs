@@ -1,10 +1,11 @@
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MuniTurrialbaAPI.Entities;
 using MuniTurrialbaAPI.Models;
 using MuniTurrialbaAPI.Repositories;
-using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
 
@@ -23,6 +24,11 @@ namespace MuniTurrialbaAPI
             builder.Services.AddSingleton<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddSingleton<IJwtRepository, JwtRepository>();
             builder.Services.AddSingleton<IPermisoRepository, PermisoRepository>();
+            builder.Services.AddSingleton<IFAQRepository, FAQRepository>();
+            builder.Services.AddSingleton<IEmpleadoRepository, EmpleadoRepository>();
+            //builder.Services.AddSingleton<IPermisoTiempoRepository, PermisoTiempoRepository>();
+            //builder.Services.AddSingleton<ISalarioRepository, SalarioRepository>();
+
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -165,6 +171,160 @@ namespace MuniTurrialbaAPI
                     /* Si no hubo ningún problema, entonces se mostrarian todos los usuarios -
                      * respectivamente. Además de indicar el código, que seria un código #200. */
                     return Results.Ok(usuarios);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+
+            //Ruta (tipo: GET) del API que sirve para traer todos los empleados:
+            app.MapGet("/api/empleados", async (IEmpleadoRepository empleadoRepo,
+                string tokenAcceso, IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+                    /* Aquí lo que se indica es que llama al método: "ObtenerEmpleados()" -
+                     * para traer a todos los usuarios que hay en la BD. 
+                     * 
+                     * Ahora, si en la variable: "empleados" es nulo, entonces quiere decir -
+                     * que no hay nada en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    var empleados = await empleadoRepo.ObtenerEmpleados();
+                    if (empleados is null)
+                    {
+                        return Results.NotFound("No se pudieron obtener los empleados.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces se mostrarian todos los empleados -
+                     * respectivamente. Además de indicar el código, que seria un código #200. */
+                    return Results.Ok(empleados);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+
+            //Ruta (tipo: GET) del API que sirve para traer todos los permisos:
+            app.MapGet("/api/permisos/{correo:required}", async (string correo, 
+                IPermisoRepository permisoRepo, IUsuarioRepository usuarioRepo,
+                string tokenAcceso, IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+                    /* Aquí lo que se indica es que llama al método: "ObtenerEmpleados()" -
+                     * para traer a todos los usuarios que hay en la BD. 
+                     * 
+                     * Ahora, si en la variable: "empleados" es nulo, entonces quiere decir -
+                     * que no hay nada en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correo)!;
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    var permisos = await permisoRepo.ObtenerPermisosUsuario(idUsuario);
+                    if (permisos is null)
+                    {
+                        return Results.NotFound("No se pudieron obtener los permisos.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces se mostrarian todos los empleados -
+                     * respectivamente. Además de indicar el código, que seria un código #200. */
+                    return Results.Ok(permisos);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+            //Ruta (tipo: GET) del API que sirve para traer todas las preguntas y respuestas:
+            app.MapGet("/api/obtenerFAQs", async (IFAQRepository preguntasYrespuestasRepo,
+                string tokenAcceso, IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2 || RolUsuario == 3)
+                {
+
+                    /* Aquí lo que se indica es que llama al método: "ObtenerFAQs()" -
+                     * para traer a todas las preguntas y respuestas que hay en la BD. 
+                     * 
+                     * Ahora, si en la variable: "fAQs" es nulo, entonces quiere decir -
+                     * que no hay nada en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    var fAQs = await preguntasYrespuestasRepo.ObtenerFAQs();
+                    if (fAQs is null)
+                    {
+                        return Results.NotFound("No se pudieron obtener las preguntas y respuestas.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces se mostrarian todas las preguntas -
+                     * y respuestas respectivamente. Además de indicar el código, que seria un -
+                     * código #200. */
+                    return Results.Ok(fAQs);
                 }
 
                 return Results.Unauthorized();
@@ -446,7 +606,7 @@ namespace MuniTurrialbaAPI
 
             //Ruta (tipo: POST) del API que sirve para crear un usuario:
             app.MapPost("/api/crearusuarios", async (UsuarioCreateDto usuarioDto,
-                IUsuarioRepository usuarioRepo) =>
+                IUsuarioRepository usuarioRepo, bool tipo) =>
             {
                     /* Es para validar si el nombre tiene datos, si es nulo o esta en blanco -
                      * entonces el API tendria que dar un mensaje indicando que el nombre es -
@@ -527,6 +687,14 @@ namespace MuniTurrialbaAPI
                         return Results.BadRequest("El rol es necesario.");
                     }
 
+                    /* Es para validar si el rol tiene datos, si es nulo o esta en blanco
+                     * entonces el API tendria que dar un mensaje indicando que el rol es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(tipo.ToString()))
+                    {
+                        return Results.BadRequest("Error.");
+                    }
+
 
                     /* Aquí lo que se indica es que llama al método: "CrearUsuario()" -
                      * para poder crear un usuario con todos los datos que se estan -
@@ -535,7 +703,7 @@ namespace MuniTurrialbaAPI
                      * Ahora, si en la variable: "nuevoUsuario" es nulo, entonces -
                      * quiere decir que no se pudo crear ese usuario en la BD. Por -
                      * lo tanto se manda un error al usuario respectivamente. */
-                    var nuevoUsuario = await usuarioRepo.CrearUsuario(usuarioDto);
+                    var nuevoUsuario = await usuarioRepo.CrearUsuario(usuarioDto, tipo);
                     if (nuevoUsuario == null)
                     {
                         return Results.BadRequest("No se pudo crear el usuario.");
@@ -556,6 +724,181 @@ namespace MuniTurrialbaAPI
                     return Results.Created($"/api/crearusuarios/{nuevoUsuario}", 
                         new { Respuesta = nuevoUsuario });
             });
+
+
+            //Ruta (tipo: POST) del API que sirve para crear un usuario:
+            app.MapPost("/api/crearEmpleados", async (EmpleadoCreateDto empleadoDto,
+                IEmpleadoRepository empleadoRepo, IUsuarioRepository usuarioRepo, 
+                string correoEmpleado, string tokenAcceso, IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+
+                    /* Es para validar si el activo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el activo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(empleadoDto.Activo.ToString()))
+                    {
+                        return Results.BadRequest("Activo es necesario.");
+                    }
+
+
+                    /* Es para validar si el departamento tiene datos, si es nulo o esta -
+                     * en blanco entonces el API tendria que dar un mensaje indicando que el -
+                     * departamento es necesario. */
+                    if (string.IsNullOrWhiteSpace(empleadoDto.Departamento))
+                    {
+                        return Results.BadRequest("El departamento es necesario.");
+                    }
+
+                    /* Aquí lo que se indica es que llama al método: "CrearEmpleado()" -
+                     * para poder crear un empleado con todos los datos que se estan -
+                     * pasando por medio de la variable: usuarioDto.
+                     * 
+                     * Ahora, si en la variable: "nuevoEmpleado" es nulo, entonces -
+                     * quiere decir que no se pudo crear ese empleado en la BD. Por -
+                     * lo tanto se manda un error al empleado respectivamente. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoEmpleado)!;
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    var nuevoEmpleado = await empleadoRepo.CrearEmpleado(empleadoDto, idUsuario);
+                    if (nuevoEmpleado == null)
+                    {
+                        return Results.BadRequest("No se pudo crear el empleado.");
+                    }
+
+                    /* También se valida si en la variable: "nuevoEmpleado" es igual a falso, -
+                     * y si lo es entonces quiere decir que ya existe un usuario con ese correo -
+                     * o contraseña en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    if (nuevoEmpleado == false)
+                    {
+                        return Results.BadRequest("Ya existe ese un empleado en el sistema.");
+                    }
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Created($"/api/crearEmpleados/{nuevoEmpleado}",
+                        new { Respuesta = nuevoEmpleado });
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+            //Ruta (tipo: POST) del API que sirve para crear una pregunta y respuesta:
+            app.MapPost("/api/crearFAQ", async (FAQCreateDto faqDto, IFAQRepository preguntasYrespuestasRepo,
+                string tokenAcceso, IJwtRepository jwtRepo, IUsuarioRepository usuarioRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2 || RolUsuario == 3)
+                {
+
+                    /* Es para validar si la pregunta tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que la pregunta es -
+                     * necesaria. */
+                    if (string.IsNullOrWhiteSpace(faqDto.Pregunta))
+                    {
+                        return Results.BadRequest("La pregunta es necesaria.");
+                    }
+
+
+                    /* Es para validar si la respuesta tiene datos, si es nulo o esta en -
+                     * blanco entonces el API tendria que dar un mensaje indicando que la -
+                     * respuesta es necesaria. */
+                    if (string.IsNullOrWhiteSpace(faqDto.Respuesta))
+                    {
+                        return Results.BadRequest("La respuesta es necesaria.");
+                    }
+
+
+                    /* Es para validar si el tipo de prioridad tiene datos, si es nulo o esta -
+                     * en blanco entonces el API tendria que dar un mensaje indicando que el - 
+                     * tipo de prioridad es necesario. */
+                    if (string.IsNullOrWhiteSpace(faqDto.Tipo_Prioridad))
+                    {
+                        return Results.BadRequest("El tipo de prioridad es necesario.");
+                    }
+
+
+
+                    /* Aquí lo que se indica es que llama al método: "CrearFAQ()" -
+                     * para poder crear un usuario con todos los datos que se estan -
+                     * pasando por medio de la variable: usuarioDto.
+                     * 
+                     * Ahora, si en la variable: "nuevoUsuario" es nulo, entonces -
+                     * quiere decir que no se pudo crear ese usuario en la BD. Por -
+                     * lo tanto se manda un error al usuario respectivamente. */
+                    string correoUsuario = respuestaValidarToken.FindFirst("correo")!.Value;
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoUsuario)!;
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    var nuevoFAQ = await preguntasYrespuestasRepo.CrearFAQ(faqDto, idUsuario);
+                    if (nuevoFAQ == null)
+                    {
+                        return Results.BadRequest("No se pudo crear la pregunta y respuesta.");
+                    }
+
+                    /* También se valida si en la variable: "nuevoFAQ" es igual a falso, -
+                     * y si lo es entonces quiere decir que ya existe un nuevoFAQ con ese correo -
+                     * o contraseña en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    if (nuevoFAQ == false)
+                    {
+                        return Results.BadRequest("Ya existe un FAQ con esa pregunta en el sistema.");
+                    }
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Created($"/api/crearFAQ/{nuevoFAQ}", 
+                        new { Respuesta = nuevoFAQ });
+                }
+                
+                return Results.Unauthorized();
+            }).RequireAuthorization();
 
 
             //Ruta (tipo: POST) del API que sirve para enviar un correo:
@@ -597,72 +940,99 @@ namespace MuniTurrialbaAPI
             });
 
 
-            /*Ruta (tipo: POST) del API que sirve para crear los permisos al usuario:
-            app.MapPost("/api/crearPermisos", async (PermisoCreateDto permisoDto,
+
+            //Ruta (tipo: POST) del API que sirve para crear los permisos al usuario:
+            app.MapPost("/api/crearPermisos", async (PermisoCreateDto permisoDto, string correoUsuario,
+                string tokenAcceso, IJwtRepository jwtRepo, IPermisoRepository permisoRepo, 
                 IUsuarioRepository usuarioRepo) =>
             {
-                /* Es para validar si el permiso de: "Leer" tiene datos, si es nulo entonces -
-                 * el API tendria que dar un mensaje indicando que el permiso de: "Leer" es -
-                 * necesario.
-                if (string.IsNullOrWhiteSpace(permisoDto.Leer.ToString()))
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
                 {
-                    return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
+                    return Results.Unauthorized();
                 }
 
-                /* Es para validar si el permiso de: "Crear" tiene datos, si es nulo entonces -
-                 * el API tendria que dar un mensaje indicando que el permiso de: "Crear" es -
-                 * necesario. 
-                if (string.IsNullOrWhiteSpace(permisoDto.Crear.ToString()))
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
                 {
-                    return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
+                    /* Es para validar si el permiso de: "Leer" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Leer" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(permisoDto.Leer.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Crear" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Crear" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(permisoDto.Crear.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Actualizar" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Actualizar" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(permisoDto.Actualizar.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Eliminar" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Eliminar" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(permisoDto.Eliminar.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
+                    }
+
+
+                    /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
+                     * al método para crear los permisos del usuario. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoUsuario)!;
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    var nuevoIdPermiso = await permisoRepo.CrearPermisos_Usuario(permisoDto, idUsuario);
+
+                    //Si la variable nuevoIdPermiso es nulo quiere decir que no hay nada en la BD.
+                    if (nuevoIdPermiso == null)
+                    {
+                        return Results.BadRequest("¡ERROR: No se pudo crear los permisos del usuario!");
+                    }
+
+                    /* Si la variable nuevoIdPermiso es igual a 0 quiere decir que ya existe esos permisos -
+                     * con el usuario en la BD. */
+                    if (nuevoIdPermiso == false)
+                    {
+                        return Results.BadRequest("¡ERROR: No se pudo crear los permisos a ese usuario, debido a que ya se les asigno dentro de la aplicación móvil!");
+                    }
+
+                    /* Si no hubo ningún problema, entonces dara el resultado como creado (que sería -
+                     * el código: #201), lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente. */
+                    return Results.Created($"/api/crearPermisos/{nuevoIdPermiso}",
+                        new { Id = nuevoIdPermiso });
                 }
 
-                /* Es para validar si el permiso de: "Actualizar" tiene datos, si es nulo entonces -
-                 * el API tendria que dar un mensaje indicando que el permiso de: "Actualizar" es -
-                 * necesario. 
-                if (string.IsNullOrWhiteSpace(permisoDto.Actualizar.ToString()))
-                {
-                    return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
-                }
+                return Results.Unauthorized();
+            }).RequireAuthorization();
 
-                /* Es para validar si el permiso de: "Eliminar" tiene datos, si es nulo entonces -
-                 * el API tendria que dar un mensaje indicando que el permiso de: "Eliminar" es -
-                 * necesario. 
-                if (string.IsNullOrWhiteSpace(permisoDto.Eliminar.ToString()))
-                {
-                    return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
-                }
 
-                /* Es para validar si el usuario que se paso tiene datos, si es nulo entonces -
-                 * el API tendria que dar un mensaje indicando que el usuario es necesario. 
-                if (string.IsNullOrWhiteSpace(permisoDto.Id_Usuario.ToString()))
-                {
-                    return Results.BadRequest("¡ERROR: El usuario no puede ser nulo!");
-                }
-
-                /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
-                 * al método para crear los permisos del usuario. 
-                var nuevoIdPermiso = await usuarioRepo.CrearPermiso_Usuario(permisoDto);
-
-                //Si la variable nuevoIdPermiso es nulo quiere decir que no hay nada en la BD.
-                if (nuevoIdPermiso == null)
-                {
-                    return Results.BadRequest("¡ERROR: No se pudo crear los permisos del usuario!");
-                }
-
-                /* Si la variable nuevoIdPermiso es igual a 0 quiere decir que ya existe esos permisos -
-                 * con el usuario en la BD. 
-                if (nuevoIdPermiso == false)
-                {
-                    return Results.BadRequest("¡ERROR: No se pudo crear los permisos a ese usuario, debido a que ya se les asigno dentro de la aplicación móvil!");
-                }
-
-                /* Si no hubo ningún problema, entonces dara el resultado como creado (que sería -
-                 * el código: #201), lo que indicaria que la solicitud POST se pudo realizar -
-                 * correctamente.
-                return Results.Created($"/api/crearPermisos/{nuevoIdPermiso}",
-                    new { Id = nuevoIdPermiso });
-            });*/
 
 
             //Ruta (tipo: PUT) del API que sirve para actualizar la contraseña del usuario:
@@ -705,6 +1075,239 @@ namespace MuniTurrialbaAPI
                  * contraseña de ese usuario. Además de indicar el código: #200. */
                 return Results.Ok(respuestaActualizacion);
             });
+
+
+            //Ruta (tipo: PUT) del API que sirve para actualizar un usuario:
+            app.MapPut("/api/actualizarUsuario", async (UsuarioCreateDto usuarioDto, 
+                IUsuarioRepository usuarioRepo, string tokenAcceso, string cedula, 
+                IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+                    /* Es para validar si el nombre tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el nombre es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Nombre))
+                    {
+                        return Results.BadRequest("El nombre es necesario.");
+                    }
+
+
+                    /* Es para validar si el primer apellido tiene datos, si es nulo o esta -
+                     * en blanco entonces el API tendria que dar un mensaje indicando que el -
+                     * primer apellido es necesario. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Apellido_1))
+                    {
+                        return Results.BadRequest("El primer apellido es necesario.");
+                    }
+
+
+                    /* Es para validar si el segundo apellido tiene datos, si es nulo o esta -
+                     * en blanco entonces el API tendria que dar un mensaje indicando que el - 
+                     * segundo apellido es necesario. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Apellido_2))
+                    {
+                        return Results.BadRequest("El segundo apellido es necesario.");
+                    }
+
+
+                    /* Es para validar si la edad tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que la edad es -
+                     * necesaria.
+                     * 
+                     * De igual manera haria lo mismo si detecta que la edad lo dejaron en cero, -
+                     * o si ponen una edad mayor a 99 (lo que significaria una edad de 3 digitos) -
+                     * respectivamente. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Edad.ToString()) || usuarioDto.Edad == 0 || usuarioDto.Edad > 99)
+                    {
+                        return Results.BadRequest("La edad es necesaria.");
+                    }
+
+
+                    /* Es para validar si la cédula tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que la cédula es -
+                     * necesaria.
+                     * 
+                     * De igual manera haria lo mismo si detecta que la cédula es mayor a 12 digitos, -
+                     * ya que en Costa Rica hay un tamaño definido para la cédula respectivamente. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Cedula) || usuarioDto.Cedula.Trim().Length > 12 || string.IsNullOrWhiteSpace(cedula) || cedula.Trim().Length > 12)
+                    {
+                        return Results.BadRequest("La cédula es necesaria.");
+                    }
+
+
+                    /* Es para validar si el correo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el correo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Correo_Electronico))
+                    {
+                        return Results.BadRequest("El correo es necesario.");
+                    }
+
+
+                    /* Es para validar si la contraseña tiene datos, si es nulo o esta en blanco -
+                     * o incluso si no cumple con la cantidad minima de digitos (que es 12) - 
+                     * entonces el API tendria que dar un mensaje indicando que la contraseña - 
+                     * es necesaria. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Contraseña) || usuarioDto.Contraseña.Trim().Length < 12)
+                    {
+                        return Results.BadRequest("La contraseña es necesaria.");
+                    }
+
+
+                    /* Es para validar si el rol tiene datos, si es nulo o esta en blanco
+                     * entonces el API tendria que dar un mensaje indicando que el rol es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Id_Rol.ToString()))
+                    {
+                        return Results.BadRequest("El rol es necesario.");
+                    }
+
+
+                    /* Aquí lo que se indica es que llama al método: "CrearEmpleado()" -
+                     * para poder crear un empleado con todos los datos que se estan -
+                     * pasando por medio de la variable: usuarioDto.
+                     * 
+                     * Ahora, si en la variable: "nuevoEmpleado" es nulo, entonces -
+                     * quiere decir que no se pudo crear ese empleado en la BD. Por -
+                     * lo tanto se manda un error al empleado respectivamente. */
+                    var resultadoUsuario = await usuarioRepo.ActualizarUsuario(usuarioDto, cedula);
+                    if (resultadoUsuario == null)
+                    {
+                        return Results.BadRequest("No se pudo actualizar el usuario seleccionado.");
+                    }
+
+                    /* También se valida si en la variable: "resultadoUsuario" es igual a falso, -
+                     * y si lo es entonces quiere decir que ya existe un nuevoFAQ con ese correo -
+                     * o contraseña en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    if (resultadoUsuario == false)
+                    {
+                        return Results.BadRequest("No existe ese usuario en el sistema.");
+                    }
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Ok(resultadoUsuario);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+
+            //Ruta (tipo: PUT) del API que sirve para crear los permisos al usuario:
+            app.MapPut("/api/actualizarPermisos", async (PermisoCreateDto permisoDto, string correoUsuario,
+                string tokenAcceso, IJwtRepository jwtRepo, IPermisoRepository permisoRepo, IUsuarioRepository usuarioRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+                    /* Es para validar si el permiso de: "Leer" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Leer" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(permisoDto.Leer.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Crear" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Crear" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(permisoDto.Crear.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Actualizar" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Actualizar" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(permisoDto.Actualizar.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Eliminar" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Eliminar" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(permisoDto.Eliminar.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: El permiso no puede ser nulo!");
+                    }
+
+
+                    /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
+                     * al método para crear los permisos del usuario. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoUsuario)!;
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    var resultadoPermiso = await permisoRepo.ActualizarPermisos_Usuario(permisoDto, idUsuario);
+
+                    //Si la variable nuevoIdPermiso es nulo quiere decir que no hay nada en la BD.
+                    if (resultadoPermiso == null)
+                    {
+                        return Results.BadRequest("¡ERROR: No se pudo actualizar los permisos del usuario!");
+                    }
+
+                    /* Si la variable nuevoIdPermiso es igual a 0 quiere decir que ya existe esos permisos -
+                     * con el usuario en la BD. */
+                    if (resultadoPermiso == false)
+                    {
+                        return Results.BadRequest("¡ERROR: No se pudo actualizar los permisos a ese usuario, debido a que ya se les asigno dentro de la aplicación móvil!");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Ok(resultadoPermiso);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
 
 
             //Ruta (tipo: PUT) del API que sirve para cambiar la foto de perfil:
@@ -787,6 +1390,327 @@ namespace MuniTurrialbaAPI
                      * proporcionado ha sido el correcto y que enviaria una respuesta sobre la -
                      * actualización de dicho foto de perfil. Además de indicar el código: #200. */
                     return Results.Ok(respuesta);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+            //Ruta (tipo: PUT) del API que sirve para actualizar la pregunta y respuesta:
+            app.MapPut("/api/actualizarFAQ", async (FAQCreateDto faqDto, string preguntaActual, IFAQRepository preguntasYrespuestasRepo,
+                string tokenAcceso, IJwtRepository jwtRepo, IUsuarioRepository usuarioRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+
+                    /* Es para validar si la pregunta tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que la pregunta es -
+                     * necesaria. */
+                    if (string.IsNullOrWhiteSpace(faqDto.Pregunta))
+                    {
+                        return Results.BadRequest("La pregunta es necesaria.");
+                    }
+
+
+                    /* Es para validar si la respuesta tiene datos, si es nulo o esta en -
+                     * blanco entonces el API tendria que dar un mensaje indicando que la -
+                     * respuesta es necesaria. */
+                    if (string.IsNullOrWhiteSpace(faqDto.Respuesta))
+                    {
+                        return Results.BadRequest("La respuesta es necesaria.");
+                    }
+
+
+                    /* Es para validar si el tipo de prioridad tiene datos, si es nulo o esta -
+                     * en blanco entonces el API tendria que dar un mensaje indicando que el - 
+                     * tipo de prioridad es necesario. */
+                    if (string.IsNullOrWhiteSpace(faqDto.Tipo_Prioridad))
+                    {
+                        return Results.BadRequest("El tipo de prioridad es necesaria.");
+                    }
+
+
+
+                    /* Aquí lo que se indica es que llama al método: "CrearFAQ()" -
+                     * para poder crear un usuario con todos los datos que se estan -
+                     * pasando por medio de la variable: usuarioDto.
+                     * 
+                     * Ahora, si en la variable: "nuevoUsuario" es nulo, entonces -
+                     * quiere decir que no se pudo crear ese usuario en la BD. Por -
+                     * lo tanto se manda un error al usuario respectivamente. */
+                    string correoUsuario = respuestaValidarToken.FindFirst("correo")!.Value;
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoUsuario)!;
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    var resultadoFAQ = await preguntasYrespuestasRepo.ActualizarFAQ(faqDto, idUsuario, preguntaActual);
+                    if (resultadoFAQ == null)
+                    {
+                        return Results.BadRequest("No se pudo actualizar el FAQ seleccionado.");
+                    }
+
+                    /* También se valida si en la variable: "nuevoFAQ" es igual a falso, -
+                     * y si lo es entonces quiere decir que ya existe un nuevoFAQ con ese correo -
+                     * o contraseña en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    if (resultadoFAQ == false)
+                    {
+                        return Results.BadRequest("No existe ese FAQ en el sistema.");
+                    }
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Ok(resultadoFAQ);
+                }
+                
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+
+            //Ruta (tipo: PUT) del API que sirve para actualizar un empleados:
+            app.MapPut("/api/actualizarEmpleado", async (EmpleadoCreateDto empleadoDto,
+                IEmpleadoRepository empleadoRepo, IUsuarioRepository usuarioRepo,
+                string correoEmpleado, string tokenAcceso, IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+                    /* Es para validar si el activo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el activo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(empleadoDto.Activo.ToString()))
+                    {
+                        return Results.BadRequest("Activo es necesario.");
+                    }
+
+
+                    /* Es para validar si el departamento tiene datos, si es nulo o esta -
+                     * en blanco entonces el API tendria que dar un mensaje indicando que el -
+                     * departamento es necesario. */
+                    if (string.IsNullOrWhiteSpace(empleadoDto.Departamento))
+                    {
+                        return Results.BadRequest("El departamento es necesario.");
+                    }
+
+                    /* Aquí lo que se indica es que llama al método: "CrearEmpleado()" -
+                     * para poder crear un empleado con todos los datos que se estan -
+                     * pasando por medio de la variable: usuarioDto.
+                     * 
+                     * Ahora, si en la variable: "nuevoEmpleado" es nulo, entonces -
+                     * quiere decir que no se pudo crear ese empleado en la BD. Por -
+                     * lo tanto se manda un error al empleado respectivamente. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoEmpleado)!;
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    var resultadoEmpleado = await empleadoRepo.ActualizarEmpleado(empleadoDto, idUsuario);
+                    if (resultadoEmpleado == null)
+                    {
+                        return Results.BadRequest("No se pudo actualizar el empleado(a) seleccionado.");
+                    }
+
+                    /* También se valida si en la variable: "resultadoEmpleado" es igual a falso, -
+                     * y si lo es entonces quiere decir que ya existe un nuevoFAQ con ese correo -
+                     * o contraseña en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    if (resultadoEmpleado == false)
+                    {
+                        return Results.BadRequest("No existe ese empleado(a) en el sistema.");
+                    }
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Ok(resultadoEmpleado);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+
+            //Ruta (tipo: DELETE) del API que sirve para eliminar la pregunta y respuesta:
+            app.MapDelete("/api/eliminarFAQ", async (string preguntaFAQ, IFAQRepository preguntasYrespuestasRepo,
+                string tokenAcceso, IJwtRepository jwtRepo, IUsuarioRepository usuarioRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+
+                    /* Es para validar si la pregunta tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que la pregunta es -
+                     * necesaria. */
+                    if (string.IsNullOrWhiteSpace(preguntaFAQ))
+                    {
+                        return Results.BadRequest("La pregunta es necesaria.");
+                    }
+
+
+                    /* Aquí lo que se indica es que llama al método: "CrearFAQ()" -
+                     * para poder crear un usuario con todos los datos que se estan -
+                     * pasando por medio de la variable: usuarioDto.
+                     * 
+                     * Ahora, si en la variable: "nuevoUsuario" es nulo, entonces -
+                     * quiere decir que no se pudo crear ese usuario en la BD. Por -
+                     * lo tanto se manda un error al usuario respectivamente. */
+                    string correoUsuario = respuestaValidarToken.FindFirst("correo")!.Value;
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoUsuario)!;
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    var resultadoFAQ = await preguntasYrespuestasRepo.EliminarFAQ(preguntaFAQ, idUsuario);
+                    if (resultadoFAQ == null)
+                    {
+                        return Results.BadRequest("No se pudo eliminar el FAQ seleccionado.");
+                    }
+
+                    /* También se valida si en la variable: "nuevoFAQ" es igual a falso, -
+                     * y si lo es entonces quiere decir que ya existe un nuevoFAQ con ese correo -
+                     * o contraseña en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    if (resultadoFAQ == false)
+                    {
+                        return Results.BadRequest("No existe ese FAQ en el sistema.");
+                    }
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Ok(resultadoFAQ);
+                }
+                
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+            //Ruta (tipo: DELETE) del API que sirve para eliminar la pregunta y respuesta:
+            app.MapDelete("/api/eliminarEmpleado", async (string correoEmpleado, string tokenAcceso,
+                IEmpleadoRepository empleadoRepo, IUsuarioRepository usuarioRepo, IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+
+                    /* Es para validar si el activo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el activo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(correoEmpleado))
+                    {
+                        return Results.BadRequest("El correo es necesario.");
+                    }
+
+                    /* Aquí lo que se indica es que llama al método: "CrearEmpleado()" -
+                     * para poder crear un empleado con todos los datos que se estan -
+                     * pasando por medio de la variable: usuarioDto.
+                     * 
+                     * Ahora, si en la variable: "nuevoEmpleado" es nulo, entonces -
+                     * quiere decir que no se pudo crear ese empleado en la BD. Por -
+                     * lo tanto se manda un error al empleado respectivamente. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoEmpleado)!;
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    var resultadoEmpleado = await empleadoRepo.EliminarEmpleado(idUsuario);
+                    var resultadoUsuario = await usuarioRepo.EliminarUsuario(idUsuario);
+
+                    if (resultadoEmpleado == null && resultadoUsuario == null)
+                    {
+                        return Results.BadRequest("No se pudo eliminar el empleado(a) seleccionado.");
+                    }
+
+                    /* También se valida si en la variable: "resultadoEmpleado" es igual a falso, -
+                     * y si lo es entonces quiere decir que ya existe un nuevoFAQ con ese correo -
+                     * o contraseña en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    if (resultadoEmpleado == false && resultadoUsuario == false)
+                    {
+                        return Results.BadRequest("No existe ese empleado(a) en el sistema.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Ok(resultadoEmpleado);
                 }
 
                 return Results.Unauthorized();

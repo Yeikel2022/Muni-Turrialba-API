@@ -1,11 +1,14 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.IdentityModel.Tokens;
 using MuniTurrialbaAPI.Entities;
 using MuniTurrialbaAPI.Models;
 using QRCoder;
+using System;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Mail;
+using System.Security.Cryptography;
 using System.Text;
 
 
@@ -24,11 +27,15 @@ namespace MuniTurrialbaAPI.Repositories
         int resultado_cedula;
         int resultado_correo;
         int resultado_usuario;
+        int resultado_usuario_eliminar;
+        int resultado_cedula_actualizar;
         int resultado_Correo;
         int Resultado_Correo;
         int Resultado_Correo_QR;
         string CodigoRestablecimiento;
         private string correoGuardado;
+
+
 
 
         /* Asignación: [1.1]
@@ -47,7 +54,7 @@ namespace MuniTurrialbaAPI.Repositories
         //            |==============| Zona de los métodos  |==============|
 
         /* Este método sirve para crear un usuario dentro de la base de datos. */
-        public async Task<bool?> CrearUsuario(UsuarioCreateDto userdto)
+        public async Task<bool?> CrearUsuario(UsuarioCreateDto userdto, bool tipo)
         {
             //Es para saber si ese usuario existe en la BD, por medio de la cédula.
             bool resultado = ObtenerIDUsuario_PorCedula(userdto.Cedula);
@@ -74,37 +81,75 @@ namespace MuniTurrialbaAPI.Repositories
                 {
                     //Esto es para poder enviar el dia y la hora en que se hizo el registro.
                     DateTime Fecha_Registro = DateTime.Now;
-
-                    //Para ejecutar el procedimiento almacenado.
-                    var nuevoUsuario = await conexionBD.ExecuteAsync("PROCED_CrearUsuarios",
-                        //Se coloca los parametros:
-                        new
-                        {
-                            Nombre = userdto.Nombre,
-                            Apellido_1 = userdto.Apellido_1,
-                            Apellido_2 = userdto.Apellido_2,
-                            Edad = userdto.Edad,
-                            Cedula = userdto.Cedula,
-                            Telefono = userdto.Telefono,
-                            Correo_Electronico = userdto.Correo_Electronico,
-                            Contraseña = userdto.Contraseña,
-                            Fecha_Creacion = Fecha_Registro,
-                            Imagen_Perfil = userdto.Imagen_Perfil,
-                            Id_Rol = userdto.Id_Rol,
-                            Leer = true,
-                            Crear = true,
-                            Actualizar = true,
-                            Eliminar = true
-                        },
-                        commandType: System.Data.CommandType.StoredProcedure);
-
+                    string contraseñaEncriptada = EncriptarContraseña(userdto.Contraseña);
                     
-                    //Esto es para mostrar al API el id del usuario.
-                    //int id_Usuario = Convert.ToInt32(nuevoUsuario.Id);
-                    var respuestaUsuario = nuevoUsuario.ToString();
+                    var respuestaUsuario = "";
+                    
+                    if (tipo == true)
+                    {
+                        string Nombre_Departamento = "Recursos Humanos";
+                        //Para ejecutar el procedimiento almacenado.
+                        var nuevoUsuario = await conexionBD.ExecuteAsync("PROCED_CrearUsuarios",
+                            //Se coloca los parametros:
+                            new
+                            {
+                                Nombre = userdto.Nombre,
+                                Apellido_1 = userdto.Apellido_1,
+                                Apellido_2 = userdto.Apellido_2,
+                                Edad = userdto.Edad,
+                                Cedula = userdto.Cedula,
+                                Telefono = userdto.Telefono,
+                                Correo_Electronico = userdto.Correo_Electronico,
+                                Contraseña = contraseñaEncriptada,
+                                Fecha_Creacion = Fecha_Registro,
+                                Imagen_Perfil = userdto.Imagen_Perfil,
+                                Id_Rol = userdto.Id_Rol,
+                                Leer = true,
+                                Crear = true,
+                                Actualizar = true,
+                                Eliminar = true,
+                                Activo = true,
+                                Departamento = Nombre_Departamento
+                            },
+                            commandType: System.Data.CommandType.StoredProcedure);
+
+                        //Esto es para mostrar al API el id del usuario.
+                        respuestaUsuario = nuevoUsuario.ToString();
+                    }
+                    else
+                    {
+                        //Para ejecutar el procedimiento almacenado.
+                        var nuevoUsuario = await conexionBD.ExecuteAsync("PROCED_CrearUsuario_Empleado",
+                            //Se coloca los parametros:
+                            new
+                            {
+                                Nombre = userdto.Nombre,
+                                Apellido_1 = userdto.Apellido_1,
+                                Apellido_2 = userdto.Apellido_2,
+                                Edad = userdto.Edad,
+                                Cedula = userdto.Cedula,
+                                Telefono = userdto.Telefono,
+                                Correo_Electronico = userdto.Correo_Electronico,
+                                Contraseña = contraseñaEncriptada,
+                                Fecha_Creacion = Fecha_Registro,
+                                Imagen_Perfil = userdto.Imagen_Perfil,
+                                Id_Rol = userdto.Id_Rol,
+                                Leer = true,
+                                Crear = true,
+                                Actualizar = true,
+                                Eliminar = true
+                            },
+                            commandType: System.Data.CommandType.StoredProcedure);
+
+                        //Esto es para mostrar al API el id del usuario.
+                        respuestaUsuario = nuevoUsuario.ToString();
+                    }
 
 
-                    if (respuestaUsuario == null)
+
+                    /* Si lo que dio el respuestaUsuario es nulo, entonces quiere decir -
+                     * que no se pudo crear el usuario. */
+                    if (respuestaUsuario == null || respuestaUsuario.IsNullOrEmpty())
                     {
                         return false;
                     }
@@ -380,13 +425,15 @@ namespace MuniTurrialbaAPI.Repositories
             {
                 try
                 {
+                    string nuevaContraseñaEncriptada = EncriptarContraseña(contraseñaParametrizado);
+
                     //Para ejecutar el procedimiento almacenado.
                     var resultadoActualizacion = await conexionBD.ExecuteAsync(
                         "PROCED_Actualizar_Contraseña_Usuario",
                         new
                         {
                             Correo_Electronico = correoParametrizado,
-                            Contraseña = contraseñaParametrizado
+                            Contraseña = nuevaContraseñaEncriptada
                         },
                         commandType: System.Data.CommandType.StoredProcedure);
 
@@ -487,6 +534,134 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.
 
 
+        /* Este método sirve para actualizar la contraseña de un usuario dentro de la base de datos. */
+        public async Task<bool?> ActualizarUsuario(UsuarioCreateDto userdto, string cedulaParametrizada)
+        {
+            //Es para saber si ese usuario existe en la BD, por medio de la correo.
+            bool? resultadoUsuario = VerificarUsuario_ParaActualizar(cedulaParametrizada);
+
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            /* Si en la variable: resultadoCorreo, que contiene la respuesta del método: -
+             * ValidarUsuario_PorCorreo, es diferente a falso, y también, si en la -
+             * variable: resultado_Correo es diferente a 0. 
+             * 
+             * Quiere decir que ese usuario que se esta pasando por parametro si existe -
+             * en la base de datos como tal. Entonces, si se podria actualizar la contraseña -
+             * respectivamente. */
+            if (resultadoUsuario != false && resultado_cedula_actualizar != 0)
+            {
+                try
+                {
+                    int idUsuario = resultado_cedula_actualizar;
+                    string nuevaContraseñaEncriptada = EncriptarContraseña(userdto.Contraseña);
+
+                    //Para ejecutar el procedimiento almacenado.
+                    var resultadoActualizacion = await conexionBD.ExecuteAsync(
+                        "PROCED_Actualizar_Usuario",
+                        new
+                        {
+                            Nombre = userdto.Nombre,
+                            Apellido_1 = userdto.Apellido_1,
+                            Apellido_2 = userdto.Apellido_2,
+                            Edad = userdto.Edad,
+                            Cedula = userdto.Cedula,
+                            Contraseña = nuevaContraseñaEncriptada,
+                            Telefono = userdto.Telefono,
+                            Correo_Electronico = userdto.Correo_Electronico,
+                            Id_Rol = userdto.Id_Rol,
+                            Id_Usuario = idUsuario
+                        },
+                        commandType: System.Data.CommandType.StoredProcedure);
+
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                    //Se cierra la conexión por temas de buenas prácticas.
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    //Para ver si se pudo actualizar:
+                    Debug.WriteLine(resultadoActualizacion.ToString());
+
+                    return true;
+                }
+                catch (Exception error)
+                {
+                    Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                        "esto por el siguiente error: " + error);
+                    return null;
+                }//Fin del try catch.
+
+            }//Fin del IF.
+
+            Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+            conexionBD.Close();
+            Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+            return false;
+        }//Fin del método.
+
+
+        /* Este método sirve para actualizar un FAQ dentro de la base de datos. */
+        public async Task<bool?> EliminarUsuario(int idUsuarioParametrizado)
+        {
+            //Es para saber si ese usuario existe en la BD, por medio de la cédula.
+            bool? resultado = VerificarUsuario_ParaEliminar(idUsuarioParametrizado);
+
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            /* Si en la variable: resultadoCorreo, que contiene la respuesta del método: -
+             * ValidarUsuario_PorCorreo, es diferente a falso, y también, si en la -
+             * variable: Resultado_Correo es diferente a 0. 
+             * 
+             * Quiere decir que ese usuario que se esta pasando por parametro si existe -
+             * en la base de datos como tal. Entonces, si se podria actualizar la foto -
+             * de perfil respectivamente. */
+            if ((resultado != null || resultado != false) && resultado_usuario_eliminar != 0)
+            {
+                try
+                {
+                    int idUsuario_Empleado = resultado_usuario_eliminar;
+
+                    //Para ejecutar el procedimiento almacenado.
+                    var resultadoEliminacion = await conexionBD.ExecuteAsync(
+                        "PROCED_Eliminar_Usuario",
+                        new
+                        {
+                            Id_Usuario = idUsuario_Empleado
+                        },
+                        commandType: System.Data.CommandType.StoredProcedure);
+
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                    //Se cierra la conexión por temas de buenas prácticas.
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    //Para ver si se pudo actualizar:
+                    Debug.WriteLine(resultadoEliminacion.ToString());
+
+                    return true;
+                }
+                catch (Exception error)
+                {
+                    Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                        "esto por el siguiente error: " + error);
+                    return null;
+                }//Fin del try catch.
+
+            }//Fin del IF.
+
+            Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+            conexionBD.Close();
+            Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+            return false;
+        }//Fin del método.
+
+
         /* Este método sirve para verificar el usuario por medio del correo y la contraseña que se -
          * esta pasando por parametro. */
         public Task<UsuarioEntitie?>? VerificarUsuario(string correoParametrizado, string contraseñaParametrizado)
@@ -507,6 +682,7 @@ namespace MuniTurrialbaAPI.Repositories
             {
                 //Se obtiene el correo y la contraseña de ese usuario:
                 string correoUsuarioBD = resultadoUsuario.Result.Correo_Electronico;
+                //string contraseñaUsuarioBD = DesencriptarContraseña(resultadoUsuario.Result.Contraseña);
                 string contraseñaUsuarioBD = resultadoUsuario.Result.Contraseña;
 
 
@@ -866,9 +1042,176 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.        
 
 
+        /* Este método sirve para validar el usuario por medio del correo electrónico, esto por medio -
+         * de la base de datos respectivamente. */
+        public bool? VerificarUsuario_ParaActualizar(string cedulaParametrizada)
+        {
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            //Si el correo pasado por parametro es igual a nulo, entonces no puede seguir.
+            if (cedulaParametrizada == null)
+            {
+                return false;
+            }
+
+
+            try
+            {
+                //Primero hay que resetear esta variable para evitar una confusión más adelante.
+                resultado_cedula_actualizar = 0;
+
+                //Para ejecutar el procedimiento almacenado.
+                var usuario_Obtenido = conexionBD.QueryFirstOrDefaultAsync<UsuarioEntitie>(
+                    //Procedimiento almacenado:
+                    "PROCED_Consultar_IdUsuario_X_Cedula",
+                    new
+                    {
+                        Cedula = cedulaParametrizada
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+
+                /* Guarda el ID que trae el procedimiento almacenado. 
+                 * Además de verificar si trae algo la variable: "usuario_Obtenido" -
+                 * respectivamente.*/
+                string? usuarioId = usuario_Obtenido.Result?.Id.ToString();
+
+
+                /* Si el ID del usuario que se obtuvo desde la BD es distinto a nulo, significa -
+                 * que ya existe un usuario con ese correo, por lo que, en este caso se guarda -
+                 * ese ID y se envia un falso a los métodos: EnviarCorreo, ActualizarContraseñaUsuario -
+                 * y CrearCodigoQR. 
+                 * 
+                 * De modo que en dichos métodos, puedan tener conocimiento de que si existe un -
+                 * usuario como tal en la base de datos, y en consecuencia, estos no permitan -
+                 * que se realicen las acciones correspondientes. */
+                if (usuarioId == null)
+                {
+                    Debug.WriteLine("Para ver la variable resultado_correo: " + resultado_cedula_actualizar);
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+                    return false;
+                }
+
+
+                /* Si no entra quiere decir que no existe, por lo que lo guarda para que los -
+                 * métodos que fueron mencionados anteriormente puedan saber sobre dicho aspecto. */
+                resultado_cedula_actualizar = usuario_Obtenido.Result!.Id;
+                Debug.WriteLine("Para ver la variable resultado_correo: " + resultado_cedula_actualizar);
+
+                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                conexionBD.Close();
+                Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                return true;
+            }
+            catch (Exception error)
+            {
+                Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                    "esto por el siguiente error: " + error);
+
+                return null;
+            }//Fin del try catch.
+
+        }//Fin del método.   
+
+
+        public bool? VerificarUsuario_ParaEliminar(int? idUsuarioParametrizado)
+        {
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            //Si la cédula pasada por parametro es distinto de nulo, puede pasar.
+            if (idUsuarioParametrizado == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                //Primero hay que resetear esta variable para evitar una confusión más adelante.
+                resultado_usuario_eliminar = 0;
+
+                //Para ejecutar el procedimiento almacenado.
+                var usuario_Obtenido = conexionBD.QueryFirstOrDefaultAsync<UsuarioEntitie>(
+                    //Procedimiento almacenado:
+                    "PROCED_Consultar_Usuario_X_Id",
+                    new
+                    {
+                        Id_Usuario = idUsuarioParametrizado
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+
+                /* Guarda el ID que trae el procedimiento almacenado. 
+                 * Además de verificar si trae algo la variable: "usuarioId" -
+                 * respectivamente. */
+                string? usuarioId = usuario_Obtenido.Result?.Id.ToString();
+
+                Task<UsuarioEntitie?> usuarioID = usuario_Obtenido;
+
+                Debug.WriteLine("Para ver la variable usuarioId: " + usuarioId);
+                Debug.WriteLine("Para ver la variable usuarioId: " + usuarioID);
+
+
+
+                /* Si el ID del usuario que se obtuvo desde la BD es distinto a nulo, significa -
+                 * que ya existe un usuario con ese correo, por lo que, en este caso se guarda -
+                 * ese ID y se envia un falso al método: CrearFAQ. 
+                 * 
+                 * De modo que en dicho método, puedan tener conocimiento de que si existe un -
+                 * usuario como tal en la base de datos, y en consecuencia, este no permita -
+                 * que se realice la creación de ese dato respectivamente. */
+                if (usuarioId != null)
+                {
+                    resultado_usuario_eliminar = usuario_Obtenido.Result!.Id;
+
+                    Debug.WriteLine("Para ver la variable empleado_Obtenido: " + usuario_Obtenido);
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    return true;
+                }
+
+
+                /* Ahora, si no entra en el IF, significa que no existe un usuario con ese -
+                 * correo electronico. Por ende, no seria necesario modificar la variable: -
+                 * resultado_correo para que guarde ese ID, esto porque el resultado ya esta -
+                 * indicando que no existe como tal (osea que es nulo).
+                 * 
+                 * Entonces, en este caso simplemente se mantiene asi como esta la variable -
+                 * (osea cero), y se envia un true al método: CrearUsuario. De modo que en -
+                 * dicho método, puedan tener conocimiento de que ese usuario no existe como -
+                 * tal en la base de datos, y en consecuencia, pueda permitir la creación de -
+                 * ese dato respectivamente. */
+
+                Debug.WriteLine("Para ver la variable faq_Obtenido: " + usuario_Obtenido);
+                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+                conexionBD.Close();
+                Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+
+                return false;
+            }
+            catch (Exception error)
+            {
+                Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                    "esto por el siguiente error: " + error);
+
+                return null;
+            }//Fin del try catch.
+
+        }//Fin del método.
+
+
 
         /* Este método sirve para obtener un código generado de forma aleatoria respectivamente. */
-        private string CodigoGenerado(int longitudParametrizada)
+        private static string CodigoGenerado(int longitudParametrizada)
         {
             //Esto es la cadena que se usara para el código de recuperación.
             const string cadenaCaracteres = "WfjndFin*MBfu*HAdPNe$GTm(L5cf{Lc!94SLCZG+:7bY&U2+PnM(ER9Nurk.bZ&6xxzcw:A!*W?-xnA:]%u=yLmCSApY2K[5K##";
@@ -897,6 +1240,89 @@ namespace MuniTurrialbaAPI.Repositories
 
         } //Fin del método.
 
+
+
+        /* Este método sirve para encriptar una contraseña respectivamente. */
+        private static string EncriptarContraseña(string contraseñaParametrizada)
+        {
+            //Primera parte de la encriptación:
+            //byte[] llaveMaestra = Encoding.UTF8.GetBytes("AQUI SE DEBE PONER UNOS CARACTERES DE LA LLAVE");
+            //byte[] vectorIniciacion = Encoding.UTF8.GetBytes("AQUI SE DEBE PONER UNOS CARACTERES PARA EL VECTOR, PERO DEBEN SER DE UN TAMAÑO DE 16.");
+            //byte[] vectorInicializacion = Encoding.UTF8.GetBytes("me-t76S%].SC)Gwt"); //Tiene que ser 16 caracteres.            
+            
+            using var sha256 = SHA256.Create();
+            
+            byte[] llaveMaestra = Encoding.UTF8.GetBytes(",f4_Rj.BvNWi:LXt##{!gZyH}Vn170RX"); //Tiene que ser 32 caracteres.            
+            byte[] llaveCodificada = sha256.ComputeHash(llaveMaestra);
+
+            using Aes estandarAvanzadoEncriptacion = Aes.Create();
+            estandarAvanzadoEncriptacion.Key = llaveCodificada;
+            estandarAvanzadoEncriptacion.GenerateIV();
+
+
+            //Segunda parte de la encriptación:
+            using MemoryStream memoriaParaEncriptar = new MemoryStream();
+            memoriaParaEncriptar.Write(estandarAvanzadoEncriptacion.IV, 0,
+                estandarAvanzadoEncriptacion.IV.Length);
+
+
+            ICryptoTransform encriptador = estandarAvanzadoEncriptacion.CreateEncryptor();
+            using CryptoStream manejarEncriptacion = new CryptoStream(memoriaParaEncriptar, 
+                encriptador, CryptoStreamMode.Write);
+
+
+            byte[] bytesContraseña = Encoding.UTF8.GetBytes(contraseñaParametrizada);
+            manejarEncriptacion.Write(bytesContraseña, 0, bytesContraseña.Length);
+            manejarEncriptacion.FlushFinalBlock();
+
+
+            //Tercera parte de la encriptación:
+            return Convert.ToBase64String(memoriaParaEncriptar.ToArray());
+        }
+
+        private static string DesencriptarContraseña(string contraseñaEncriptadaParametrizada)
+        {
+            //Primera parte de la encriptación:
+            //byte[] llaveMaestra = Encoding.UTF8.GetBytes("AQUI SE DEBE PONER UNOS CARACTERES DE LA LLAVE");
+            //byte[] vectorIniciacion = Encoding.UTF8.GetBytes("AQUI SE DEBE PONER UNOS CARACTERES PARA EL VECTOR, PERO DEBEN SER DE UN TAMAÑO DE 16.");
+            //byte[] vectorInicializacion = Encoding.UTF8.GetBytes("me-t76S%].SC)Gwt"); //Tiene que ser 16 caracteres.
+
+
+            using var sha256 = SHA256.Create();
+
+            byte[] llaveMaestra = Encoding.UTF8.GetBytes(",f4_Rj.BvNWi:LXt##{!gZyH}Vn170RX");
+            byte[] llaveCodificada = sha256.ComputeHash(llaveMaestra);
+            byte[] bytesCifrados = Convert.FromBase64String(contraseñaEncriptadaParametrizada);
+
+
+            if(bytesCifrados.Length < 16)
+            {
+                throw new ArgumentException("Error en el texto.");
+            }
+
+
+            using Aes estandarAvanzadoEncriptacion = Aes.Create();
+            estandarAvanzadoEncriptacion.Key = llaveCodificada;
+            
+            byte[] vectorInicializacion = new byte[16];
+            Array.Copy(bytesCifrados, 0, vectorInicializacion, 0, 16);
+            estandarAvanzadoEncriptacion.IV = vectorInicializacion;
+
+
+            ICryptoTransform desencriptador = estandarAvanzadoEncriptacion.CreateDecryptor();
+
+
+            //Segunda parte de la encriptación:
+            using MemoryStream memoriaParaDesencriptar = new MemoryStream(bytesCifrados, 16, bytesCifrados.Length - 16);
+            using CryptoStream manejarDesencriptacion = new CryptoStream(memoriaParaDesencriptar, desencriptador, CryptoStreamMode.Read);
+            using StreamReader leerDesencriptacion = new StreamReader(manejarDesencriptacion);
+
+            string contraseñaDesencriptada = leerDesencriptacion.ReadToEnd();
+
+            //Tercera parte de la encriptación:
+            return contraseñaDesencriptada;
+
+        }
 
         //|========================================| FIN DE LA CLASE |========================================|
     }
