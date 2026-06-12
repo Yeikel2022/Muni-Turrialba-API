@@ -1,10 +1,9 @@
-﻿namespace MuniTurrialbaAPI.Entities
+﻿namespace MuniTurrialbaAPI.Models
 {
-    public class SalarioEntitie
+    public class SalarioCreateDto
     {
-        /* Son los datos que representan -
-         * las columnas de la tabla: "Salario" */
-        public int Id { get; set; }
+        /* Son los datos que serviran para -
+         * la transferencia de datos. */
         public DateTime Fecha_Entrega { get; set; }
         public decimal Salario { get; set; }
         public string? Descripcion { get; set; }

@@ -27,6 +27,80 @@
         }
       }
     },
+    "/api/empleados": {
+      "get": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/permisos/{correo}": {
+      "get": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "correo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/obtenerFAQs": {
+      "get": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/usuario/{correo}": {
       "get": {
         "tags": [
@@ -152,11 +226,93 @@
         "tags": [
           "MuniTurrialbaAPI"
         ],
+        "parameters": [
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UsuarioCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/crearEmpleados": {
+      "post": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "correoEmpleado",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmpleadoCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/crearFAQ": {
+      "post": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FAQCreateDto"
               }
             }
           },
@@ -191,6 +347,46 @@
         }
       }
     },
+    "/api/crearPermisos": {
+      "post": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "correoUsuario",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermisoCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/actualizarcontraseña": {
       "put": {
         "tags": [
@@ -201,6 +397,86 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ExtensionUsuarioCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/actualizarUsuario": {
+      "put": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cedula",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/actualizarPermisos": {
+      "put": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "correoUsuario",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermisoCreateDto"
               }
             }
           },
@@ -234,10 +510,167 @@
           }
         }
       }
+    },
+    "/api/actualizarFAQ": {
+      "put": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "preguntaActual",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FAQCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/actualizarEmpleado": {
+      "put": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "correoEmpleado",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmpleadoCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/eliminarFAQ": {
+      "delete": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "preguntaFAQ",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/eliminarEmpleado": {
+      "delete": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "correoEmpleado",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "EmpleadoCreateDto": {
+        "type": "object",
+        "properties": {
+          "activo": {
+            "type": "boolean"
+          },
+          "departamento": {
+            "type": "string",
+            "nullable": true
+          },
+          "id_Usuario": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "ExtensionUsuarioCreateDto": {
         "type": "object",
         "properties": {
@@ -248,6 +681,42 @@
           "contraseña": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FAQCreateDto": {
+        "type": "object",
+        "properties": {
+          "pregunta": {
+            "type": "string",
+            "nullable": true
+          },
+          "respuesta": {
+            "type": "string",
+            "nullable": true
+          },
+          "tipo_Prioridad": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PermisoCreateDto": {
+        "type": "object",
+        "properties": {
+          "leer": {
+            "type": "boolean"
+          },
+          "crear": {
+            "type": "boolean"
+          },
+          "actualizar": {
+            "type": "boolean"
+          },
+          "eliminar": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

@@ -12,9 +12,14 @@ namespace MuniTurrialbaAPI.Repositories
         /* NOTA: Se le coloco el: " ? " en ciertos métodos para que, cuando se usen, -
          * estos puedan aceptar valores nulos. */
 
-        //Task<bool?> CrearPermiso_Usuario(PermisoCreateDto permisodto);
+        Task<bool?> CrearPermisos_Usuario(PermisoCreateDto permisodto, int idUsuarioParametrizado);
+
+        Task<bool?> ActualizarPermisos_Usuario(PermisoCreateDto permisodto, int idUsuarioParametrizado);
+
 
         Task<PermisoEntitie?>? ObtenerPermisosUsuario(int idUsuarioParametrizado);
+
+        bool? VerificarPermisosUsuario_ParaCrear(int? idUsuarioParametrizado);
 
 
     }

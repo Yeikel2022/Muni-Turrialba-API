@@ -1,0 +1,528 @@
+﻿using Dapper;
+using Microsoft.Data.SqlClient;
+using MuniTurrialbaAPI.Entities;
+using MuniTurrialbaAPI.Models;
+using System.Diagnostics;
+
+namespace MuniTurrialbaAPI.Repositories
+{
+    public class FAQRepository : IFAQRepository
+    {
+        //                  |==============| Zona de conexión a la BD |==============|
+
+        //Es para el método con la asignación: [1.1]
+        private readonly string _connectionString;
+
+        //Variables globales:
+        int resultado_pregunta;
+        int resultado_pregunta_actualizar;
+        int resultado_pregunta_eliminar;
+
+        /* Asignación: [1.1]
+         * Esto es para definir la conexión, osea, basicamente trae la conexión que se -
+         * hizo en el appsettings, y luego lo llama para que se haga dicha conexión en -
+         * este lugar. */
+        public FAQRepository(IConfiguration configuration)
+        {
+            _connectionString = configuration.GetConnectionString("DefaultConnection")!;
+        }
+
+        //Sirve para que los métodos de abajo puedan enviar y/o utilizar la BD.
+        private SqlConnection CreateConnection() => new SqlConnection(_connectionString);
+
+
+        //            |==============| Zona de los métodos  |==============|
+
+        /* Este método sirve para crear un FAQ dentro de la base de datos. */
+        public async Task<bool?> CrearFAQ(FAQCreateDto faqdto, int idUsuarioParametrizado)
+        {
+            //Es para saber si ese usuario existe en la BD, por medio de la cédula.
+            bool? resultado = ObtenerFAQ_PorPregunta(faqdto.Pregunta);
+
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            //Para ver lo que hay en resultado_pregunta:
+            Debug.WriteLine("Para ver resultado_pregunta: " + resultado_pregunta);
+
+            /* Si en la variable: resultado, que contiene la respuesta del método: -
+             * ObtenerIDUsuario_PorCedula, es diferente a falso, y también, si en la -
+             * variable: resultado_cedula es igual a 0. 
+             * 
+             * Quiere decir que ese usuario que se esta pasando por parametro no existe -
+             * en la base de datos como tal. Entonces, si se podria registrar hacia la -
+             * base de datos. 
+             * 
+             * Esto de igual manera aplica al correo electronico respectivamente. */
+            if ((resultado != null || resultado != false) && resultado_pregunta == 0)
+            {
+                try
+                {
+                    //Para ejecutar el procedimiento almacenado.
+                    var nuevoFAQ = await conexionBD.ExecuteAsync("PROCED_CrearFAQs",
+                        //Se coloca los parametros:
+                        new
+                        {
+                            Pregunta = faqdto.Pregunta,
+                            Respuesta = faqdto.Respuesta,
+                            Tipo_Prioridad = faqdto.Tipo_Prioridad,
+                            Id_Usuario = idUsuarioParametrizado
+                        },
+                        commandType: System.Data.CommandType.StoredProcedure);
+
+
+                    var respuestaFAQ = nuevoFAQ.ToString();
+                    if (respuestaFAQ == null)
+                    {
+                        return false;
+                    }
+
+
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+                    //Se cierra la conexión por temas de buenas prácticas.
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    return true;
+                }
+                catch (Exception error)
+                {
+                    Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                        "esto por el siguiente error: " + error);
+                    return null;
+                }//Fin del try catch.
+            }
+
+            Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+            //Se cierra la conexión por temas de buenas prácticas.
+            conexionBD.Close();
+            Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+            return false;
+
+
+        }//Fin del método.
+
+
+        /* Este método sirve para actualizar un FAQ dentro de la base de datos. */
+        public async Task<bool?> ActualizarFAQ(FAQCreateDto faqParametrizado, int idUsuarioParametrizado, string preguntaParametrizado)
+        {
+            //Es para saber si ese usuario existe en la BD, por medio de la cédula.
+            bool? resultado = VerificarPregunta_ParaActualizar(preguntaParametrizado, idUsuarioParametrizado);
+
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            /* Si en la variable: resultadoCorreo, que contiene la respuesta del método: -
+             * ValidarUsuario_PorCorreo, es diferente a falso, y también, si en la -
+             * variable: Resultado_Correo es diferente a 0. 
+             * 
+             * Quiere decir que ese usuario que se esta pasando por parametro si existe -
+             * en la base de datos como tal. Entonces, si se podria actualizar la foto -
+             * de perfil respectivamente. */
+            if ((resultado != null || resultado != false) && resultado_pregunta_actualizar != 0)
+            {
+                try
+                {
+                    int idFAQ = resultado_pregunta_actualizar;
+
+                    //Para ejecutar el procedimiento almacenado.
+                    var resultadoActualizacion = await conexionBD.ExecuteAsync(
+                        "PROCED_Actualizar_FAQ",
+                        new
+                        {
+                            Pregunta = faqParametrizado.Pregunta,
+                            Respuesta = faqParametrizado.Respuesta,
+                            Tipo_Prioridad = faqParametrizado.Tipo_Prioridad,
+                            Id_FAQ = idFAQ
+                        },
+                        commandType: System.Data.CommandType.StoredProcedure);
+
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                    //Se cierra la conexión por temas de buenas prácticas.
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    //Para ver si se pudo actualizar:
+                    Debug.WriteLine(resultadoActualizacion.ToString());
+
+                    return true;
+                }
+                catch (Exception error)
+                {
+                    Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                        "esto por el siguiente error: " + error);
+                    return null;
+                }//Fin del try catch.
+
+            }//Fin del IF.
+
+            Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+            conexionBD.Close();
+            Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+            return false;
+        }//Fin del método.
+
+
+        /* Este método sirve para actualizar un FAQ dentro de la base de datos. */
+        public async Task<bool?> EliminarFAQ(string preguntaParametrizada, int idUsuarioParametrizado)
+        {
+            //Es para saber si ese usuario existe en la BD, por medio de la cédula.
+            bool? resultado = VerificarPregunta_ParaEliminar(preguntaParametrizada, idUsuarioParametrizado);
+
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            /* Si en la variable: resultadoCorreo, que contiene la respuesta del método: -
+             * ValidarUsuario_PorCorreo, es diferente a falso, y también, si en la -
+             * variable: Resultado_Correo es diferente a 0. 
+             * 
+             * Quiere decir que ese usuario que se esta pasando por parametro si existe -
+             * en la base de datos como tal. Entonces, si se podria actualizar la foto -
+             * de perfil respectivamente. */
+            if ((resultado != null || resultado != false) && resultado_pregunta_eliminar != 0)
+            {
+                try
+                {
+                    int idFAQ = resultado_pregunta_eliminar;
+
+                    //Para ejecutar el procedimiento almacenado.
+                    var resultadoEliminacion = await conexionBD.ExecuteAsync(
+                        "PROCED_Eliminar_FAQ",
+                        new
+                        {
+                            Id_FAQ = idFAQ
+                        },
+                        commandType: System.Data.CommandType.StoredProcedure);
+
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                    //Se cierra la conexión por temas de buenas prácticas.
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    //Para ver si se pudo actualizar:
+                    Debug.WriteLine(resultadoEliminacion.ToString());
+
+                    return true;
+                }
+                catch (Exception error)
+                {
+                    Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                        "esto por el siguiente error: " + error);
+                    return null;
+                }//Fin del try catch.
+
+            }//Fin del IF.
+
+            Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+            conexionBD.Close();
+            Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+            return false;
+        }//Fin del método.
+
+
+
+
+        /* Este método sirve para obtener todos los usuarios dentro la base de datos. */
+        public async Task<IEnumerable<FAQEntitie>?> ObtenerFAQs()
+        {
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            try
+            {
+                //Para ejecutar el procedimiento almacenado.
+                var todas_Preguntas_Y_Respuestas = await conexionBD.QueryAsync<FAQEntitie>(
+                    //Procedimiento almacenado:
+                    "PROCED_ConsultarFAQs", commandType:
+                    System.Data.CommandType.StoredProcedure);
+
+                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                conexionBD.Close();
+                Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                return todas_Preguntas_Y_Respuestas;
+            }
+            catch (Exception error)
+            {
+                Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                    "esto por el siguiente error: " + error);
+                return null;
+            }//Fin del try catch.
+
+        }//Fin del método.
+
+
+        /* Este método sirve para obtener el ID de un usuario por medio de la cédula, esto por medio -
+         * de la base de datos respectivamente. */
+        public bool? ObtenerFAQ_PorPregunta(string preguntaParametrizada)
+        {
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            //Si la cédula pasada por parametro es distinto de nulo, puede pasar.
+            if (preguntaParametrizada == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                //Primero hay que resetear esta variable para evitar una confusión más adelante.
+                resultado_pregunta = 0;
+
+                //Para ejecutar el procedimiento almacenado.
+                var faq_Obtenido = conexionBD.QueryFirstOrDefaultAsync<FAQEntitie>(
+                    //Procedimiento almacenado:
+                    "PROCED_ConsultarFAQ",
+                    new
+                    {
+                        Pregunta = preguntaParametrizada
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+
+                /* Guarda el ID que trae el procedimiento almacenado. 
+                 * Además de verificar si trae algo la variable: "faqId" -
+                 * respectivamente. */
+                string? faqId = faq_Obtenido.Result?.Id.ToString();
+                Debug.WriteLine("Para ver la variable faqId: " + faqId);
+
+
+
+                /* Si el ID del usuario que se obtuvo desde la BD es distinto a nulo, significa -
+                 * que ya existe un usuario con ese correo, por lo que, en este caso se guarda -
+                 * ese ID y se envia un falso al método: CrearFAQ. 
+                 * 
+                 * De modo que en dicho método, puedan tener conocimiento de que si existe un -
+                 * usuario como tal en la base de datos, y en consecuencia, este no permita -
+                 * que se realice la creación de ese dato respectivamente. */
+                if (faqId != null)
+                {
+                    resultado_pregunta = faq_Obtenido.Result!.Id;
+
+                    Debug.WriteLine("Para ver la variable faq_Obtenido: " + faq_Obtenido);
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    return false;
+                }
+
+
+                /* Ahora, si no entra en el IF, significa que no existe un usuario con ese -
+                 * correo electronico. Por ende, no seria necesario modificar la variable: -
+                 * resultado_correo para que guarde ese ID, esto porque el resultado ya esta -
+                 * indicando que no existe como tal (osea que es nulo).
+                 * 
+                 * Entonces, en este caso simplemente se mantiene asi como esta la variable -
+                 * (osea cero), y se envia un true al método: CrearUsuario. De modo que en -
+                 * dicho método, puedan tener conocimiento de que ese usuario no existe como -
+                 * tal en la base de datos, y en consecuencia, pueda permitir la creación de -
+                 * ese dato respectivamente. */
+
+                Debug.WriteLine("Para ver la variable faq_Obtenido: " + faq_Obtenido);
+                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+                conexionBD.Close();
+                Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+
+                return true;
+            }
+            catch (Exception error)
+            {
+                Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                    "esto por el siguiente error: " + error);
+
+                return null;
+            }//Fin del try catch.
+
+        }//Fin del método.
+
+
+        /* Este método sirve para obtener el ID de un usuario por medio de la cédula, esto por medio -
+         * de la base de datos respectivamente. */
+        public bool? VerificarPregunta_ParaActualizar(string preguntaParametrizado, int idUsuarioParametrizado)
+        {
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            //Si la cédula pasada por parametro es distinto de nulo, puede pasar.
+            if (preguntaParametrizado == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                //Primero hay que resetear esta variable para evitar una confusión más adelante.
+                resultado_pregunta_actualizar = 0;
+
+                //Para ejecutar el procedimiento almacenado.
+                var faq_Obtenido = conexionBD.QueryFirstOrDefaultAsync<FAQEntitie>(
+                    //Procedimiento almacenado:
+                    "PROCED_VerificarFAQ",
+                    new
+                    {
+                        Id_Usuario = idUsuarioParametrizado,
+                        Pregunta = preguntaParametrizado
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+
+                /* Guarda el ID que trae el procedimiento almacenado. 
+                 * Además de verificar si trae algo la variable: "faqId" -
+                 * respectivamente. */
+                string? faqId = faq_Obtenido.Result?.Id.ToString();
+                Debug.WriteLine("Para ver la variable faqId: " + faqId);
+
+
+
+                /* Si el ID del usuario que se obtuvo desde la BD es distinto a nulo, significa -
+                 * que ya existe un usuario con ese correo, por lo que, en este caso se guarda -
+                 * ese ID y se envia un falso al método: CrearFAQ. 
+                 * 
+                 * De modo que en dicho método, puedan tener conocimiento de que si existe un -
+                 * usuario como tal en la base de datos, y en consecuencia, este no permita -
+                 * que se realice la creación de ese dato respectivamente. */
+                if (faqId == null)
+                {
+                    Debug.WriteLine("Para ver la variable faq_Obtenido: " + faq_Obtenido);
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    return false;
+                }
+
+
+                /* Ahora, si no entra en el IF, significa que no existe un usuario con ese -
+                 * correo electronico. Por ende, no seria necesario modificar la variable: -
+                 * resultado_correo para que guarde ese ID, esto porque el resultado ya esta -
+                 * indicando que no existe como tal (osea que es nulo).
+                 * 
+                 * Entonces, en este caso simplemente se mantiene asi como esta la variable -
+                 * (osea cero), y se envia un true al método: CrearUsuario. De modo que en -
+                 * dicho método, puedan tener conocimiento de que ese usuario no existe como -
+                 * tal en la base de datos, y en consecuencia, pueda permitir la creación de -
+                 * ese dato respectivamente. */
+                resultado_pregunta_actualizar = faq_Obtenido.Result!.Id;
+                
+                Debug.WriteLine("Para ver la variable faq_Obtenido: " + faq_Obtenido);
+                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                conexionBD.Close();
+                Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+
+                return true;
+            }
+            catch (Exception error)
+            {
+                Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                    "esto por el siguiente error: " + error);
+
+                return null;
+            }//Fin del try catch.
+
+        }//Fin del método.
+
+
+        /* Este método sirve para obtener el ID de un usuario por medio de la cédula, esto por medio -
+         * de la base de datos respectivamente. */
+        public bool? VerificarPregunta_ParaEliminar(string preguntaParametrizada, int idUsuarioParametrizado)
+        {
+            //Crea la conexión hacia la BD.
+            using var conexionBD = CreateConnection();
+
+            //Si la cédula pasada por parametro es distinto de nulo, puede pasar.
+            if (preguntaParametrizada == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                //Primero hay que resetear esta variable para evitar una confusión más adelante.
+                resultado_pregunta_eliminar = 0;
+
+                //Para ejecutar el procedimiento almacenado.
+                var faq_Obtenido = conexionBD.QueryFirstOrDefaultAsync<FAQEntitie>(
+                    //Procedimiento almacenado:
+                    "PROCED_VerificarFAQ",
+                    new
+                    {
+                        Id_Usuario = idUsuarioParametrizado,
+                        Pregunta = preguntaParametrizada
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+
+                /* Guarda el ID que trae el procedimiento almacenado. 
+                 * Además de verificar si trae algo la variable: "faqId" -
+                 * respectivamente. */
+                string? faqId = faq_Obtenido.Result?.Id.ToString();
+                Debug.WriteLine("Para ver la variable faqId: " + faqId);
+
+
+
+                /* Si el ID del usuario que se obtuvo desde la BD es distinto a nulo, significa -
+                 * que ya existe un usuario con ese correo, por lo que, en este caso se guarda -
+                 * ese ID y se envia un falso al método: CrearFAQ. 
+                 * 
+                 * De modo que en dicho método, puedan tener conocimiento de que si existe un -
+                 * usuario como tal en la base de datos, y en consecuencia, este no permita -
+                 * que se realice la creación de ese dato respectivamente. */
+                if (faqId == null)
+                {
+                    Debug.WriteLine("Para ver la variable faq_Obtenido: " + faq_Obtenido);
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    return false;
+                }
+
+
+                /* Ahora, si no entra en el IF, significa que no existe un usuario con ese -
+                 * correo electronico. Por ende, no seria necesario modificar la variable: -
+                 * resultado_correo para que guarde ese ID, esto porque el resultado ya esta -
+                 * indicando que no existe como tal (osea que es nulo).
+                 * 
+                 * Entonces, en este caso simplemente se mantiene asi como esta la variable -
+                 * (osea cero), y se envia un true al método: CrearUsuario. De modo que en -
+                 * dicho método, puedan tener conocimiento de que ese usuario no existe como -
+                 * tal en la base de datos, y en consecuencia, pueda permitir la creación de -
+                 * ese dato respectivamente. */
+                resultado_pregunta_eliminar = faq_Obtenido.Result!.Id;
+
+                Debug.WriteLine("Para ver la variable faq_Obtenido: " + faq_Obtenido);
+                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                conexionBD.Close();
+                Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+
+                return true;
+            }
+            catch (Exception error)
+            {
+                Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                    "esto por el siguiente error: " + error);
+
+                return null;
+            }//Fin del try catch.
+
+        }//Fin del método.
+
+
+
+
+        //|========================================| FIN DE LA CLASE |========================================|
+    }
+}

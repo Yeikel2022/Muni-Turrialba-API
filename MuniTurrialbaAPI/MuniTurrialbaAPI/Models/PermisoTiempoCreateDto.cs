@@ -1,10 +1,9 @@
-﻿namespace MuniTurrialbaAPI.Entities
+﻿namespace MuniTurrialbaAPI.Models
 {
-    public class PermisoTiempoEntitie
-    {        
-        /* Son los datos que representan -
-         * las columnas de la tabla: "Permiso_Tiempo" */
-        public int Id { get; set; }
+    public class PermisoTiempoCreateDto
+    {
+        /* Son los datos que serviran para -
+         * la transferencia de datos. */
         public string Tipo_Permiso { get; set; }
         public string? Descripcion { get; set; }
         public DateTime Fecha_Asignacion { get; set; }
