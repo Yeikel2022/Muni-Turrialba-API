@@ -25,17 +25,15 @@ namespace MuniTurrialbaAPI.Repositories
          * indicar si la cédula enviada, existe o no en la BD. Además de servir para la segunda -
          * validación del método: CrearUsuario. */
         int resultado_cedula;
-        int resultado_correo;
-        int resultado_usuario;
-        int resultado_usuario_eliminar;
         int resultado_cedula_actualizar;
+        
+        int resultado_correo;
         int resultado_Correo;
         int Resultado_Correo;
         int Resultado_Correo_QR;
+        
+        int resultado_usuario_eliminar;
         string CodigoRestablecimiento;
-        private string correoGuardado;
-
-
 
 
         /* Asignación: [1.1]
@@ -405,6 +403,52 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.
 
 
+        /* Este método sirve para verificar el usuario por medio del correo y la contraseña que se -
+         * esta pasando por parametro. */
+        public Task<UsuarioEntitie?>? VerificarUsuario(string correoParametrizado, string contraseñaParametrizado)
+        {
+            //Es para saber si ese usuario existe en la BD, por medio de la correo.
+            var resultadoUsuario = ObtenerUsuario_PorCorreo(correoParametrizado);
+
+            /* Aqui lo que se hace es validar si ese usuario existe. Si en dado -
+             * caso da un nulo, entonces quiere decir que no existe y devolvera -
+             * un nulo respectivamente. */
+            if (resultadoUsuario?.Result?.ToString() == null)
+            {
+                return null;
+            }
+
+
+            try
+            {
+                //Se obtiene el correo y la contraseña de ese usuario:
+                string correoUsuarioBD = resultadoUsuario.Result.Correo_Electronico;
+                string contraseñaUsuarioBD = DesencriptarContraseña(resultadoUsuario.Result.Contraseña);
+                //string contraseñaUsuarioBD = resultadoUsuario.Result.Contraseña;
+
+
+                /* Aqui lo que se hace es validar si el correo y la contraseña que se -
+                 * pasaron por parametro son los mismos que estan en la base de datos. 
+                 * 
+                 * Si es así entonces devolvera al usuario, y en caso contrario devolveria -
+                 * un nulo respectivamente. */
+                if (correoUsuarioBD == correoParametrizado && contraseñaUsuarioBD == contraseñaParametrizado)
+                {
+                    return resultadoUsuario;
+                }
+
+                return null;
+            }
+            catch (Exception error)
+            {
+                Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                    "esto por el siguiente error: " + error);
+                return null;
+            }//Fin del try catch.
+
+        }//Fin del método.
+
+
         /* Este método sirve para actualizar la contraseña de un usuario dentro de la base de datos. */
         public async Task<bool> ActualizarContraseñaUsuario(string contraseñaParametrizado, string correoParametrizado)
         {
@@ -662,52 +706,6 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.
 
 
-        /* Este método sirve para verificar el usuario por medio del correo y la contraseña que se -
-         * esta pasando por parametro. */
-        public Task<UsuarioEntitie?>? VerificarUsuario(string correoParametrizado, string contraseñaParametrizado)
-        {
-            //Es para saber si ese usuario existe en la BD, por medio de la correo.
-            var resultadoUsuario = ObtenerUsuario_PorCorreo(correoParametrizado);
-
-            /* Aqui lo que se hace es validar si ese usuario existe. Si en dado -
-             * caso da un nulo, entonces quiere decir que no existe y devolvera -
-             * un nulo respectivamente. */
-            if (resultadoUsuario?.Result?.ToString() == null)
-            {
-                return null;
-            }
-
-
-            try
-            {
-                //Se obtiene el correo y la contraseña de ese usuario:
-                string correoUsuarioBD = resultadoUsuario.Result.Correo_Electronico;
-                //string contraseñaUsuarioBD = DesencriptarContraseña(resultadoUsuario.Result.Contraseña);
-                string contraseñaUsuarioBD = resultadoUsuario.Result.Contraseña;
-
-
-                /* Aqui lo que se hace es validar si el correo y la contraseña que se -
-                 * pasaron por parametro son los mismos que estan en la base de datos. 
-                 * 
-                 * Si es así entonces devolvera al usuario, y en caso contrario devolveria -
-                 * un nulo respectivamente. */
-                if (correoUsuarioBD == correoParametrizado && contraseñaUsuarioBD == contraseñaParametrizado)
-                {
-                    return resultadoUsuario;
-                }
-
-                return null;
-            }
-            catch (Exception error)
-            {
-                Debug.WriteLine("No se pudo realizar correctamente la operación, " +
-                    "esto por el siguiente error: " + error);
-                return null;
-            }//Fin del try catch.
-
-        }//Fin del método.
-
-
 
         /* Este método sirve para obtener todos los usuarios dentro la base de datos. */
         public async Task<IEnumerable<UsuarioEntitie>?> ObtenerUsuarios()
@@ -784,6 +782,61 @@ namespace MuniTurrialbaAPI.Repositories
                 return usuario_Obtenido;
 
             } catch (Exception error)
+            {
+                Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                        "esto por el siguiente error: " + error);
+                return null;
+            }//Fin del try catch.
+
+        }//Fin del método.
+
+
+        /* Este método sirve para obtener un usuario por medio del correo en la base de datos. */
+        public async Task<UsuarioEntitie?>? ObtenerUsuario_PorCedula(string cedulaParametrizada)
+        {
+            //Crea la conexión.
+            using var conexionBD = CreateConnection();
+
+            try
+            {
+                //Para ejecutar el procedimiento almacenado.
+                var usuario_Obtenido = await conexionBD.QueryFirstOrDefaultAsync<UsuarioEntitie>(
+                    "PROCED_Consultar_Usuario_X_Cedula",
+                    new
+                    {
+                        Cedula = cedulaParametrizada
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+                /* Para que verificar si trajo el correo respectivo. 
+                 * Además de permitir nulos a traves del simbolo: ? */
+                string? verDatos = usuario_Obtenido?.Correo_Electronico;
+                Debug.WriteLine("Datos que trajo: " + verDatos);
+
+                /* Si el usuario que se obtuvo es nulo, quiere decir -
+                 * que ese correo no existe dentro de la BD. Por lo -
+                 * que se envia como respuesta un nulo. */
+                if (usuario_Obtenido?.ToString() == null)
+                {
+                    Debug.WriteLine("Datos que trajo: " + verDatos);
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+                    //Para cerrar la conexión, esto por temas de buenas prácticas.
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    return null;
+                }
+
+                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                //Para cerrar la conexión, esto por temas de buenas prácticas.
+                conexionBD.Close();
+                Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                return usuario_Obtenido;
+
+            }
+            catch (Exception error)
             {
                 Debug.WriteLine("No se pudo realizar correctamente la operación, " +
                         "esto por el siguiente error: " + error);
@@ -1119,6 +1172,8 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.   
 
 
+        /* Este método sirve para validar el usuario por medio del correo electrónico, esto por medio -
+         * de la base de datos respectivamente. */
         public bool? VerificarUsuario_ParaEliminar(int? idUsuarioParametrizado)
         {
             //Crea la conexión hacia la BD.
@@ -1241,7 +1296,6 @@ namespace MuniTurrialbaAPI.Repositories
         } //Fin del método.
 
 
-
         /* Este método sirve para encriptar una contraseña respectivamente. */
         private static string EncriptarContraseña(string contraseñaParametrizada)
         {
@@ -1280,6 +1334,8 @@ namespace MuniTurrialbaAPI.Repositories
             return Convert.ToBase64String(memoriaParaEncriptar.ToArray());
         }
 
+
+        /* Este método sirve para encriptar una contraseña respectivamente. */
         private static string DesencriptarContraseña(string contraseñaEncriptadaParametrizada)
         {
             //Primera parte de la encriptación:
@@ -1323,6 +1379,8 @@ namespace MuniTurrialbaAPI.Repositories
             return contraseñaDesencriptada;
 
         }
+
+
 
         //|========================================| FIN DE LA CLASE |========================================|
     }

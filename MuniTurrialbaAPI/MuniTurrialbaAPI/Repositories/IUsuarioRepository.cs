@@ -34,6 +34,8 @@ namespace MuniTurrialbaAPI.Repositories
         Task<IEnumerable<UsuarioEntitie>?> ObtenerUsuarios();
 
         Task<UsuarioEntitie?>? ObtenerUsuario_PorCorreo(string correoParametrizado);
+        
+        Task<UsuarioEntitie?>? ObtenerUsuario_PorCedula(string cedulaParametrizada);
 
         bool ObtenerIDUsuario_PorCedula(string cedulaParametrizada);
 

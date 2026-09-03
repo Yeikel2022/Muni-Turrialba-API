@@ -17,6 +17,7 @@ namespace MuniTurrialbaAPI.Repositories
 
 
         Task<IEnumerable<ExtensionEmpleadoUsuarioEntitie>?> ObtenerEmpleados();
+        Task<EmpleadoEntitie?>? ObtenerEmpleado_PorIdUsuario(int idUsuarioParametrizada);
         bool? VerificarEmpleado_ParaCrear(int? idUsuarioParametrizado);
         bool? VerificarEmpleado_ParaActualizar(int? idUsuarioParametrizado);
     }
