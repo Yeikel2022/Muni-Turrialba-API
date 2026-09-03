@@ -27,6 +27,28 @@
         }
       }
     },
+    "/api/iniciosSesion": {
+      "get": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/empleados": {
       "get": {
         "tags": [
@@ -63,6 +85,50 @@
               "type": "string"
             }
           },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/permisosTiempo": {
+      "get": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/salarios": {
+      "get": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
           {
             "name": "tokenAcceso",
             "in": "query",
@@ -253,6 +319,46 @@
         }
       }
     },
+    "/api/crearusuario": {
+      "post": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/crearEmpleados": {
       "post": {
         "tags": [
@@ -387,6 +493,86 @@
         }
       }
     },
+    "/api/crearPermisosTiempo": {
+      "post": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "cedulaUsuario",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermisoTiempoCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/crearSalarios": {
+      "post": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "cedulaUsuario",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalarioCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/actualizarcontraseña": {
       "put": {
         "tags": [
@@ -477,6 +663,86 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PermisoCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/actualizarPermisosTiempo": {
+      "put": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "cedulaUsuario",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermisoTiempoCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/actualizarSalarios": {
+      "put": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "cedulaUsuario",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalarioCreateDto"
               }
             }
           },
@@ -650,6 +916,66 @@
           }
         }
       }
+    },
+    "/api/eliminarPermisosTiempo": {
+      "delete": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "cedulaUsuario",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/eliminarSalarios": {
+      "delete": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "cedulaUsuario",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -717,6 +1043,57 @@
           },
           "eliminar": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PermisoTiempoCreateDto": {
+        "type": "object",
+        "properties": {
+          "tipo_Permiso": {
+            "type": "string",
+            "nullable": true
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "fecha_Asignacion": {
+            "type": "string",
+            "nullable": true
+          },
+          "fecha_Finalizacion": {
+            "type": "string",
+            "nullable": true
+          },
+          "estado_Permiso": {
+            "type": "boolean"
+          },
+          "id_Empleado": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SalarioCreateDto": {
+        "type": "object",
+        "properties": {
+          "fecha_Entrega": {
+            "type": "string",
+            "nullable": true
+          },
+          "salario": {
+            "type": "number",
+            "format": "double"
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "id_Empleado": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

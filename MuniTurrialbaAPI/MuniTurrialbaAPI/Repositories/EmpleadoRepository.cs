@@ -34,8 +34,6 @@ namespace MuniTurrialbaAPI.Repositories
 
         //            |==============| Zona de los métodos  |==============|
 
-        /* Este método sirve para crear un empleado dentro de la base de datos. */
-
         /* Este método sirve para crear un FAQ dentro de la base de datos. */
         public async Task<bool?> CrearEmpleado(EmpleadoCreateDto empleado_dto, int idUsuarioParametrizado)
         {
@@ -257,6 +255,62 @@ namespace MuniTurrialbaAPI.Repositories
 
         }//Fin del método.
 
+
+        /* Este método sirve para obtener un usuario por medio del correo en la base de datos. */
+        public async Task<EmpleadoEntitie?>? ObtenerEmpleado_PorIdUsuario(int idUsuarioParametrizada)
+        {
+            //Crea la conexión.
+            using var conexionBD = CreateConnection();
+
+            try
+            {
+                //Para ejecutar el procedimiento almacenado.
+                var empleado_Obtenido = await conexionBD.QueryFirstOrDefaultAsync<EmpleadoEntitie>(
+                    "PROCED_Consultar_Empleado_X_Usuario",
+                    new
+                    {
+                        Id_Usuario = idUsuarioParametrizada
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+                /* Para que verificar si trajo el correo respectivo. 
+                 * Además de permitir nulos a traves del simbolo: ? */
+                string? verDatos = empleado_Obtenido?.Id_Usuario.ToString();
+                Debug.WriteLine("Datos que trajo: " + verDatos);
+
+                /* Si el usuario que se obtuvo es nulo, quiere decir -
+                 * que ese correo no existe dentro de la BD. Por lo -
+                 * que se envia como respuesta un nulo. */
+                if (empleado_Obtenido?.ToString() == null)
+                {
+                    Debug.WriteLine("Datos que trajo: " + verDatos);
+                    Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+
+                    //Para cerrar la conexión, esto por temas de buenas prácticas.
+                    conexionBD.Close();
+                    Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                    return null;
+                }
+
+                Debug.WriteLine("Para ver si la conexión sigue activa: " + conexionBD.State);
+                //Para cerrar la conexión, esto por temas de buenas prácticas.
+                conexionBD.Close();
+                Debug.WriteLine("Para ver si la conexión se cerro: " + conexionBD.State);
+
+                return empleado_Obtenido;
+
+            }
+            catch (Exception error)
+            {
+                Debug.WriteLine("No se pudo realizar correctamente la operación, " +
+                        "esto por el siguiente error: " + error);
+                return null;
+            }//Fin del try catch.
+
+        }//Fin del método.
+
+
         /* Este método sirve para obtener el ID de un usuario por medio de la cédula, esto por medio -
          * de la base de datos respectivamente. */
         public bool? VerificarEmpleado_ParaCrear(int? idUsuarioParametrizado)
@@ -343,6 +397,7 @@ namespace MuniTurrialbaAPI.Repositories
             }//Fin del try catch.
 
         }//Fin del método.
+
 
         /* Este método sirve para obtener el ID de un usuario por medio de la cédula, esto por medio -
          * de la base de datos respectivamente. */
@@ -431,6 +486,9 @@ namespace MuniTurrialbaAPI.Repositories
 
         }//Fin del método.
 
+
+        /* Este método sirve para obtener el ID de un usuario por medio de la cédula, esto por medio -
+         * de la base de datos respectivamente. */
         public bool? VerificarEmpleado_ParaEliminar(int? idUsuarioParametrizado)
         {
             //Crea la conexión hacia la BD.

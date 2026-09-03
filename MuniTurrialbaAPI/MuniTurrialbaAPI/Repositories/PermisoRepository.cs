@@ -196,6 +196,8 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.
 
 
+        /* Este método sirve para obtener los permisos de un usuario dentro de la base -
+         * de datos. */
         public bool? VerificarPermisosUsuario_ParaCrear(int? idUsuarioParametrizado)
         {
             //Crea la conexión hacia la BD.
@@ -285,6 +287,8 @@ namespace MuniTurrialbaAPI.Repositories
         }//Fin del método.
 
 
+        /* Este método sirve para obtener los permisos de un usuario dentro de la base -
+         * de datos. */
         public bool? VerificarPermisosUsuario_ParaActualizar(int? idUsuarioParametrizado)
         {
             //Crea la conexión hacia la BD.

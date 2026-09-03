@@ -8,6 +8,7 @@ using MuniTurrialbaAPI.Models;
 using MuniTurrialbaAPI.Repositories;
 using System.Security.Claims;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MuniTurrialbaAPI
 {
@@ -26,8 +27,9 @@ namespace MuniTurrialbaAPI
             builder.Services.AddSingleton<IPermisoRepository, PermisoRepository>();
             builder.Services.AddSingleton<IFAQRepository, FAQRepository>();
             builder.Services.AddSingleton<IEmpleadoRepository, EmpleadoRepository>();
-            //builder.Services.AddSingleton<IPermisoTiempoRepository, PermisoTiempoRepository>();
-            //builder.Services.AddSingleton<ISalarioRepository, SalarioRepository>();
+            builder.Services.AddSingleton<IPermisoTiempoRepository, PermisoTiempoRepository>();
+            builder.Services.AddSingleton<ISalarioRepository, SalarioRepository>();
+            builder.Services.AddSingleton<IInicioSesionRepository, InicioSesionRepository>();
 
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -128,6 +130,7 @@ namespace MuniTurrialbaAPI
 
             //           |=============| RUTAS DEL API |=============|
 
+            //           |=============| GET |=============|
             //Ruta (tipo: GET) del API que sirve para traer todos los usuarios:
             app.MapGet("/api/usuarios", async (IUsuarioRepository usuarioRepo, 
                 string tokenAcceso, IJwtRepository jwtRepo) => 
@@ -177,6 +180,54 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
+            //Ruta (tipo: GET) del API que sirve para traer a todos los usuarios que iniciaron sesión:
+            app.MapGet("/api/iniciosSesion", async (IInicioSesionRepository sesionRepo,
+                string tokenAcceso, IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+                    /* Aquí lo que se indica es que llama al método: "ObtenerRegistros_InicioSesion()" -
+                     * para traer a todos los usuarios que hay en la BD. 
+                     * 
+                     * Ahora, si en la variable: "iniciosSesion" es nulo, entonces quiere decir -
+                     * que no hay nada en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    var iniciosSesion = await sesionRepo.ObtenerRegistros_InicioSesion();
+                    if (iniciosSesion is null)
+                    {
+                        return Results.NotFound("No se pudieron obtener los inicios de sesion.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces se mostrarian todos los iniciosSesion -
+                     * respectivamente. Además de indicar el código, que seria un código #200. */
+                    return Results.Ok(iniciosSesion);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
 
             //Ruta (tipo: GET) del API que sirve para traer todos los empleados:
             app.MapGet("/api/empleados", async (IEmpleadoRepository empleadoRepo,
@@ -224,11 +275,11 @@ namespace MuniTurrialbaAPI
                 }
 
                 return Results.Unauthorized();
+
             }).RequireAuthorization();
 
 
-
-            //Ruta (tipo: GET) del API que sirve para traer todos los permisos:
+            //Ruta (tipo: GET) del API que sirve para traer todos los permisos de autorización:
             app.MapGet("/api/permisos/{correo:required}", async (string correo, 
                 IPermisoRepository permisoRepo, IUsuarioRepository usuarioRepo,
                 string tokenAcceso, IJwtRepository jwtRepo) =>
@@ -263,6 +314,10 @@ namespace MuniTurrialbaAPI
                      * que no hay nada en la BD. Por lo tanto se manda un error al usuario -
                      * respectivamente. */
                     Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correo)!;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese correo en el sistema.");
+                    }
                     int idUsuario = Usuario!.Result!.Id;
 
                     var permisos = await permisoRepo.ObtenerPermisosUsuario(idUsuario);
@@ -279,6 +334,105 @@ namespace MuniTurrialbaAPI
 
                 return Results.Unauthorized();
             }).RequireAuthorization();
+
+
+            //Ruta (tipo: GET) del API que sirve para traer todos los permisos de tiempo:
+            app.MapGet("/api/permisosTiempo", async (IPermisoTiempoRepository tiempoRepo,
+                string tokenAcceso, IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2 || RolUsuario == 3)
+                {
+                    /* Aquí lo que se indica es que llama al método: "ObtenerEmpleados()" -
+                     * para traer a todos los usuarios que hay en la BD. 
+                     * 
+                     * Ahora, si en la variable: "empleados" es nulo, entonces quiere decir -
+                     * que no hay nada en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    var permisosTiempo = await tiempoRepo.ObtenerPermisosTiempo();
+                    if (permisosTiempo is null)
+                    {
+                        return Results.NotFound("No se pudieron obtener los permisos de tiempo.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces se mostrarian todos los empleados -
+                     * respectivamente. Además de indicar el código, que seria un código #200. */
+                    return Results.Ok(permisosTiempo);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+            //Ruta (tipo: GET) del API que sirve para traer todos los salarios:
+            app.MapGet("/api/salarios", async (ISalarioRepository salarioRepo, string tokenAcceso, 
+                IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+                    /* Aquí lo que se indica es que llama al método: "ObtenerEmpleados()" -
+                     * para traer a todos los usuarios que hay en la BD. 
+                     * 
+                     * Ahora, si en la variable: "empleados" es nulo, entonces quiere decir -
+                     * que no hay nada en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    var salarios = await salarioRepo.ObtenerSalarios();
+                    if (salarios is null)
+                    {
+                        return Results.NotFound("No se pudieron obtener los salarios.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces se mostrarian todos los empleados -
+                     * respectivamente. Además de indicar el código, que seria un código #200. */
+                    return Results.Ok(salarios);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
 
             //Ruta (tipo: GET) del API que sirve para traer todas las preguntas y respuestas:
             app.MapGet("/api/obtenerFAQs", async (IFAQRepository preguntasYrespuestasRepo,
@@ -401,7 +555,7 @@ namespace MuniTurrialbaAPI
                 var respuestaRecuperacion = usuarioRepo.VerificarCodigo(codigo);
                 if (respuestaRecuperacion != true)
                 {
-                    return Results.BadRequest("El código ingresado esta incorrecto.");
+                    return Results.BadRequest("El código que fue ingresado esta incorrecto.");
                 }
 
 
@@ -475,7 +629,7 @@ namespace MuniTurrialbaAPI
                     var codigoQR = usuarioRepo.CrearCodigoQR(nombre, apellidos, correo);
                     if (codigoQR.ToString() == null)
                     {
-                        return Results.NotFound("No se pudo obtener el código QR.");
+                        return Results.BadRequest("No se pudo obtener el código QR.");
                     }
 
 
@@ -484,7 +638,7 @@ namespace MuniTurrialbaAPI
                      * se manda un error al usuario respectivamente. */
                     if (codigoQR.ToString() == "false")
                     {
-                        return Results.NotFound("El correo proporcionado esta incorrecto.");
+                        return Results.BadRequest("El correo electrónico no existe en el sistema.");
                     }
 
 
@@ -497,9 +651,14 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
+
+
+            //                     |=============| POST |=============|
+
             //Ruta (tipo: POST) del API que sirve para que el usuario pueda iniciar sesión:
             app.MapPost("/api/iniciarsesion", (ExtensionUsuarioCreateDto usuarioDto, IUsuarioRepository 
-                usuarioRepo, IJwtRepository jwtRepo, IPermisoRepository permisoRepo) => 
+                usuarioRepo, IInicioSesionRepository sesionRepo, IJwtRepository jwtRepo, IPermisoRepository 
+                permisoRepo) => 
             {
                 /* Es para validar si el correo tiene datos, si es nulo o esta en blanco -
                  * entonces el API tendria que dar un mensaje indicando que el correo es -
@@ -592,6 +751,18 @@ namespace MuniTurrialbaAPI
                     new Claim("permiso_Actualizar", respuestaPermisos_Usuario.Result!.Actualizar.ToString()),
                     new Claim("permiso_Eliminar", respuestaPermisos_Usuario.Result!.Eliminar.ToString())
                 };
+
+                InicioSesionCreateDto inicioSesionCreateDto = new InicioSesionCreateDto();
+
+                inicioSesionCreateDto.Fecha_Inicio_Sesion = DateTime.Now;
+                inicioSesionCreateDto.Hora = TimeOnly.FromDateTime(DateTime.Now);
+                inicioSesionCreateDto.Ultima_Conexion = DateTime.Now;
+
+                var respuestaInicioSesion = sesionRepo.CrearRegistroInicioSesion(inicioSesionCreateDto, respuestaVerificacion_Usuario.Result!.Id);
+                 if (respuestaInicioSesion == null)
+                {
+                    return Results.BadRequest("No se pudo continuar con el inicio de sesión.");
+                }
 
 
                 /* Y una vez colocado todo lo necesario en los claims, entonces se pasarian -
@@ -727,6 +898,155 @@ namespace MuniTurrialbaAPI
 
 
             //Ruta (tipo: POST) del API que sirve para crear un usuario:
+            app.MapPost("/api/crearusuario", async (UsuarioCreateDto usuarioDto,
+                IUsuarioRepository usuarioRepo, bool tipo, string tokenAcceso, 
+                IJwtRepository jwtRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+                    /* Es para validar si el nombre tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el nombre es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Nombre))
+                    {
+                        return Results.BadRequest("El nombre es necesario.");
+                    }
+
+
+                    /* Es para validar si el primer apellido tiene datos, si es nulo o esta -
+                     * en blanco entonces el API tendria que dar un mensaje indicando que el -
+                     * primer apellido es necesario. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Apellido_1))
+                    {
+                        return Results.BadRequest("El primer apellido es necesario.");
+                    }
+
+
+                    /* Es para validar si el segundo apellido tiene datos, si es nulo o esta -
+                     * en blanco entonces el API tendria que dar un mensaje indicando que el - 
+                     * segundo apellido es necesario. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Apellido_2))
+                    {
+                        return Results.BadRequest("El segundo apellido es necesario.");
+                    }
+
+
+                    /* Es para validar si la edad tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que la edad es -
+                     * necesaria.
+                     * 
+                     * De igual manera haria lo mismo si detecta que la edad lo dejaron en cero, -
+                     * o si ponen una edad mayor a 99 (lo que significaria una edad de 3 digitos) -
+                     * respectivamente. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Edad.ToString()) || usuarioDto.Edad == 0 || usuarioDto.Edad > 99)
+                    {
+                        return Results.BadRequest("La edad es necesaria.");
+                    }
+
+
+                    /* Es para validar si la cédula tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que la cédula es -
+                     * necesaria.
+                     * 
+                     * De igual manera haria lo mismo si detecta que la cédula es mayor a 12 digitos, -
+                     * ya que en Costa Rica hay un tamaño definido para la cédula respectivamente. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Cedula) || usuarioDto.Cedula.Trim().Length > 12)
+                    {
+                        return Results.BadRequest("La cédula es necesaria.");
+                    }
+
+
+                    /* Es para validar si el correo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el correo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Correo_Electronico))
+                    {
+                        return Results.BadRequest("El correo es necesario.");
+                    }
+
+
+                    /* Es para validar si la contraseña tiene datos, si es nulo o esta en blanco -
+                     * o incluso si no cumple con la cantidad minima de digitos (que es 12) - 
+                     * entonces el API tendria que dar un mensaje indicando que la contraseña - 
+                     * es necesaria. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Contraseña) || usuarioDto.Contraseña.Trim().Length < 12)
+                    {
+                        return Results.BadRequest("La contraseña es necesaria.");
+                    }
+
+
+                    /* Es para validar si el rol tiene datos, si es nulo o esta en blanco
+                     * entonces el API tendria que dar un mensaje indicando que el rol es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(usuarioDto.Id_Rol.ToString()))
+                    {
+                        return Results.BadRequest("El rol es necesario.");
+                    }
+
+                    /* Es para validar si el rol tiene datos, si es nulo o esta en blanco
+                     * entonces el API tendria que dar un mensaje indicando que el rol es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(tipo.ToString()))
+                    {
+                        return Results.BadRequest("Error.");
+                    }
+
+
+                    /* Aquí lo que se indica es que llama al método: "CrearUsuario()" -
+                     * para poder crear un usuario con todos los datos que se estan -
+                     * pasando por medio de la variable: usuarioDto.
+                     * 
+                     * Ahora, si en la variable: "nuevoUsuario" es nulo, entonces -
+                     * quiere decir que no se pudo crear ese usuario en la BD. Por -
+                     * lo tanto se manda un error al usuario respectivamente. */
+                    var nuevoUsuario = await usuarioRepo.CrearUsuario(usuarioDto, tipo);
+                    if (nuevoUsuario == null)
+                    {
+                        return Results.BadRequest("No se pudo crear el usuario.");
+                    }
+
+                    /* También se valida si en la variable: "nuevoUsuario" es igual a falso, -
+                     * y si lo es entonces quiere decir que ya existe un usuario con ese correo -
+                     * o contraseña en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    if (nuevoUsuario == false)
+                    {
+                        return Results.BadRequest("Ya existe una cuenta con ese correo o cédula en el sistema.");
+                    }
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Created($"/api/crearusuario/{nuevoUsuario}",
+                        new { Respuesta = nuevoUsuario });
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+            //Ruta (tipo: POST) del API que sirve para crear un empleado:
             app.MapPost("/api/crearEmpleados", async (EmpleadoCreateDto empleadoDto,
                 IEmpleadoRepository empleadoRepo, IUsuarioRepository usuarioRepo, 
                 string correoEmpleado, string tokenAcceso, IJwtRepository jwtRepo) =>
@@ -794,7 +1114,7 @@ namespace MuniTurrialbaAPI
                      * respectivamente. */
                     if (nuevoEmpleado == false)
                     {
-                        return Results.BadRequest("Ya existe ese un empleado en el sistema.");
+                        return Results.BadRequest("Ya existe ese empleado en el sistema.");
                     }
 
                     /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
@@ -887,7 +1207,7 @@ namespace MuniTurrialbaAPI
                      * respectivamente. */
                     if (nuevoFAQ == false)
                     {
-                        return Results.BadRequest("Ya existe un FAQ con esa pregunta en el sistema.");
+                        return Results.BadRequest("Ya existe esa pregunta en el sistema.");
                     }
 
                     /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
@@ -901,7 +1221,7 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
-            //Ruta (tipo: POST) del API que sirve para enviar un correo:
+            //Ruta (tipo: POST) del API que sirve para enviar un correo de recuperación a los usuarios:
             app.MapPost("/api/enviarcorreo/{correo:required}", async (string correo,
                 IUsuarioRepository usuarioRepo) =>
             {
@@ -940,8 +1260,7 @@ namespace MuniTurrialbaAPI
             });
 
 
-
-            //Ruta (tipo: POST) del API que sirve para crear los permisos al usuario:
+            //Ruta (tipo: POST) del API que sirve para crear los permisos de autorización a los usuarios:
             app.MapPost("/api/crearPermisos", async (PermisoCreateDto permisoDto, string correoUsuario,
                 string tokenAcceso, IJwtRepository jwtRepo, IPermisoRepository permisoRepo, 
                 IUsuarioRepository usuarioRepo) =>
@@ -1005,21 +1324,25 @@ namespace MuniTurrialbaAPI
                     /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
                      * al método para crear los permisos del usuario. */
                     Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoUsuario)!;
-                    int idUsuario = Usuario!.Result!.Id;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese correo electrónico en el sistema.");
+                    }
 
+                    int idUsuario = Usuario!.Result!.Id;
                     var nuevoIdPermiso = await permisoRepo.CrearPermisos_Usuario(permisoDto, idUsuario);
 
                     //Si la variable nuevoIdPermiso es nulo quiere decir que no hay nada en la BD.
                     if (nuevoIdPermiso == null)
                     {
-                        return Results.BadRequest("¡ERROR: No se pudo crear los permisos del usuario!");
+                        return Results.BadRequest("No se pudo crear los permisos.");
                     }
 
                     /* Si la variable nuevoIdPermiso es igual a 0 quiere decir que ya existe esos permisos -
                      * con el usuario en la BD. */
                     if (nuevoIdPermiso == false)
                     {
-                        return Results.BadRequest("¡ERROR: No se pudo crear los permisos a ese usuario, debido a que ya se les asigno dentro de la aplicación móvil!");
+                        return Results.BadRequest("Ya existe un usuario con esos permisos.");
                     }
 
                     /* Si no hubo ningún problema, entonces dara el resultado como creado (que sería -
@@ -1033,9 +1356,230 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
+            //Ruta (tipo: POST) del API que sirve para crear los permisos a los empleados:
+            app.MapPost("/api/crearPermisosTiempo", async (PermisoTiempoCreateDto tiempoDto, string cedulaUsuario,
+                string tokenAcceso, IJwtRepository jwtRepo, IPermisoTiempoRepository tiempoRepo, IEmpleadoRepository empleadoRepo,
+                IUsuarioRepository usuarioRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
 
 
-            //Ruta (tipo: PUT) del API que sirve para actualizar la contraseña del usuario:
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+
+                    /* Es para validar si el activo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el activo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(cedulaUsuario))
+                    {
+                        return Results.BadRequest("La cédula es necesaria.");
+                    }
+
+                    /* Es para validar si el permiso de: "Leer" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Leer" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(tiempoDto.Tipo_Permiso))
+                    {
+                        return Results.BadRequest("¡ERROR: El tipo de permiso no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Crear" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Crear" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(tiempoDto.Descripcion))
+                    {
+                        return Results.BadRequest("¡ERROR: La descripción no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Actualizar" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Actualizar" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(tiempoDto.Fecha_Asignacion.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: La fecha de asignación no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Eliminar" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Eliminar" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(tiempoDto.Fecha_Finalizacion.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: La fecha de finalización no puede ser nulo!");
+                    }
+
+
+                    /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
+                     * al método para crear los permisos del usuario. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCedula(cedulaUsuario)!;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe esa cédula en el sistema.");
+                    }
+
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    Task<EmpleadoEntitie?> Empleado = empleadoRepo.ObtenerEmpleado_PorIdUsuario(idUsuario)!;
+                    if (Empleado.Result == null)
+                    {
+                       return Results.BadRequest("No existe ese empleado en el sistema.");
+                    }
+                    
+                    int idEmpleado = Empleado!.Result!.Id;
+                    var nuevoIdTiempo = await tiempoRepo.CrearPermisosTiempo(tiempoDto, idEmpleado);
+
+                    //Si la variable nuevoIdPermiso es nulo quiere decir que no hay nada en la BD.
+                    if (nuevoIdTiempo == null)
+                    {
+                        return Results.BadRequest("No se pudo crear el permiso de tiempo.");
+                    }
+
+                    /* Si la variable nuevoIdPermiso es igual a 0 quiere decir que ya existe esos permisos -
+                     * con el usuario en la BD. */
+                    if (nuevoIdTiempo == false)
+                    {
+                        return Results.BadRequest("Ya existe un usuario con ese permiso de tiempo.");
+                    }
+
+                    /* Si no hubo ningún problema, entonces dara el resultado como creado (que sería -
+                     * el código: #201), lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente. */
+                    return Results.Created($"/api/crearPermisosTiempo/{nuevoIdTiempo}",
+                        new { Id = nuevoIdTiempo });
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+            //Ruta (tipo: POST) del API que sirve para crear los salarios a los empleados:
+            app.MapPost("/api/crearSalarios", async (SalarioCreateDto salarioDto, string cedulaUsuario,
+                string tokenAcceso, IJwtRepository jwtRepo, ISalarioRepository salarioRepo, IEmpleadoRepository empleadoRepo,
+                IUsuarioRepository usuarioRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+
+                    /* Es para validar si el activo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el activo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(cedulaUsuario))
+                    {
+                        return Results.BadRequest("La cédula es necesaria.");
+                    }
+
+                    /* Es para validar si el permiso de: "Leer" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Leer" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(salarioDto.Fecha_Entrega))
+                    {
+                        return Results.BadRequest("¡ERROR: La fecha de entrega no puede ser nula!");
+                    }
+
+                    /* Es para validar si el permiso de: "Crear" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Crear" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(salarioDto.Salario.ToString()) || Regex.IsMatch(salarioDto.Salario.ToString(), "@\"^\\d+.\\d{2}$"))
+                    {
+                        return Results.BadRequest("¡ERROR: El salario no puede ser nulo o esta incorrecto!");
+                    }
+
+                    /* Es para validar si el permiso de: "Actualizar" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Actualizar" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(salarioDto.Descripcion))
+                    {
+                        return Results.BadRequest("¡ERROR: La descripcion no puede ser nula!");
+                    }
+
+
+                    /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
+                     * al método para crear los permisos del usuario. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCedula(cedulaUsuario)!;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe esa cédula en el sistema.");
+                    }
+
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    Task<EmpleadoEntitie?> Empleado = empleadoRepo.ObtenerEmpleado_PorIdUsuario(idUsuario)!;
+                    if (Empleado.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese empleado en el sistema.");
+                    }
+
+                    int idEmpleado = Empleado!.Result!.Id;
+                    var nuevoIdSalario = await salarioRepo.CrearSalarios(salarioDto, idEmpleado);
+
+                    //Si la variable nuevoIdPermiso es nulo quiere decir que no hay nada en la BD.
+                    if (nuevoIdSalario == null)
+                    {
+                        return Results.BadRequest("No se pudo crear el salario.");
+                    }
+
+                    /* Si la variable nuevoIdPermiso es igual a 0 quiere decir que ya existe esos permisos -
+                     * con el usuario en la BD. */
+                    if (nuevoIdSalario == false)
+                    {
+                        return Results.BadRequest("Ya existe un usuario con ese salario.");
+                    }
+
+                    /* Si no hubo ningún problema, entonces dara el resultado como creado (que sería -
+                     * el código: #201), lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente. */
+                    return Results.Created($"/api/crearSalarios/{nuevoIdSalario}",
+                        new { Id = nuevoIdSalario });
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+
+
+
+            //                    |=============| PUT |=============|
+
+            //Ruta (tipo: PUT) del API que sirve para actualizar las contraseñas de los usuarios:
             app.MapPut("/api/actualizarcontraseña", async (ExtensionUsuarioCreateDto usuarioDto,
                 IUsuarioRepository usuarioRepo) =>
             {
@@ -1077,7 +1621,7 @@ namespace MuniTurrialbaAPI
             });
 
 
-            //Ruta (tipo: PUT) del API que sirve para actualizar un usuario:
+            //Ruta (tipo: PUT) del API que sirve para actualizar a los usuarios:
             app.MapPut("/api/actualizarUsuario", async (UsuarioCreateDto usuarioDto, 
                 IUsuarioRepository usuarioRepo, string tokenAcceso, string cedula, 
                 IJwtRepository jwtRepo) =>
@@ -1195,7 +1739,7 @@ namespace MuniTurrialbaAPI
                     var resultadoUsuario = await usuarioRepo.ActualizarUsuario(usuarioDto, cedula);
                     if (resultadoUsuario == null)
                     {
-                        return Results.BadRequest("No se pudo actualizar el usuario seleccionado.");
+                        return Results.BadRequest("No se pudo actualizar el usuario.");
                     }
 
                     /* También se valida si en la variable: "resultadoUsuario" es igual a falso, -
@@ -1217,8 +1761,7 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
-
-            //Ruta (tipo: PUT) del API que sirve para crear los permisos al usuario:
+            //Ruta (tipo: PUT) del API que sirve para crear los permisos de autorización a los usuarios:
             app.MapPut("/api/actualizarPermisos", async (PermisoCreateDto permisoDto, string correoUsuario,
                 string tokenAcceso, IJwtRepository jwtRepo, IPermisoRepository permisoRepo, IUsuarioRepository usuarioRepo) =>
             {
@@ -1281,21 +1824,25 @@ namespace MuniTurrialbaAPI
                     /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
                      * al método para crear los permisos del usuario. */
                     Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoUsuario)!;
-                    int idUsuario = Usuario!.Result!.Id;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese correo en el sistema.");
+                    }
 
+                    int idUsuario = Usuario!.Result!.Id;
                     var resultadoPermiso = await permisoRepo.ActualizarPermisos_Usuario(permisoDto, idUsuario);
 
                     //Si la variable nuevoIdPermiso es nulo quiere decir que no hay nada en la BD.
                     if (resultadoPermiso == null)
                     {
-                        return Results.BadRequest("¡ERROR: No se pudo actualizar los permisos del usuario!");
+                        return Results.BadRequest("No se pudo actualizar los permisos del usuario.");
                     }
 
                     /* Si la variable nuevoIdPermiso es igual a 0 quiere decir que ya existe esos permisos -
                      * con el usuario en la BD. */
                     if (resultadoPermiso == false)
                     {
-                        return Results.BadRequest("¡ERROR: No se pudo actualizar los permisos a ese usuario, debido a que ya se les asigno dentro de la aplicación móvil!");
+                        return Results.BadRequest("No existe ese usuario en el sistema.");
                     }
 
 
@@ -1309,8 +1856,225 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
+            //Ruta (tipo: PUT) del API que sirve para crear los permisos de tiempo a los usuarios:
+            app.MapPut("/api/actualizarPermisosTiempo", async (PermisoTiempoCreateDto tiempoDto, string cedulaUsuario,
+                string tokenAcceso, IJwtRepository jwtRepo, IPermisoTiempoRepository tiempoRepo, IEmpleadoRepository empleadoRepo,
+                IUsuarioRepository usuarioRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
 
-            //Ruta (tipo: PUT) del API que sirve para cambiar la foto de perfil:
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+                    /* Es para validar si el activo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el activo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(cedulaUsuario))
+                    {
+                        return Results.BadRequest("La cédula es necesario.");
+                    }
+
+                    /* Es para validar si el permiso de: "Leer" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Leer" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(tiempoDto.Tipo_Permiso))
+                    {
+                        return Results.BadRequest("¡ERROR: El tipo de permiso no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Crear" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Crear" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(tiempoDto.Descripcion))
+                    {
+                        return Results.BadRequest("¡ERROR: La descripción no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Actualizar" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Actualizar" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(tiempoDto.Fecha_Asignacion.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: La fecha de asignación no puede ser nulo!");
+                    }
+
+                    /* Es para validar si el permiso de: "Eliminar" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Eliminar" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(tiempoDto.Fecha_Finalizacion.ToString()))
+                    {
+                        return Results.BadRequest("¡ERROR: La fecha de finalización no puede ser nulo!");
+                    }
+
+
+                    /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
+                     * al método para crear los permisos del usuario. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCedula(cedulaUsuario)!;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe esa cédula en el sistema.");
+                    }
+
+
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    Task<EmpleadoEntitie?> Empleado = empleadoRepo.ObtenerEmpleado_PorIdUsuario(idUsuario)!;
+                    if (Empleado.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese empleado en el sistema.");
+                    }
+
+                    int idEmpleado = Empleado!.Result!.Id;
+                    var resultadoPermisoTiempo = await tiempoRepo.ActualizarPermisosTiempo(tiempoDto, idEmpleado);
+
+                    //Si la variable nuevoIdPermiso es nulo quiere decir que no hay nada en la BD.
+                    if (resultadoPermisoTiempo == null)
+                    {
+                        return Results.BadRequest("No se pudo actualizar el permiso de tiempo.");
+                    }
+
+                    /* Si la variable nuevoIdPermiso es igual a 0 quiere decir que ya existe esos permisos -
+                     * con el usuario en la BD. */
+                    if (resultadoPermisoTiempo == false)
+                    {
+                        return Results.BadRequest("No existe ese usuario en el sistema.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Ok(resultadoPermisoTiempo);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+            //Ruta (tipo: PUT) del API que sirve para actualizar los salarios:
+            app.MapPut("/api/actualizarSalarios", async (SalarioCreateDto salarioDto, string cedulaUsuario,
+                string tokenAcceso, IJwtRepository jwtRepo, ISalarioRepository salarioRepo, IEmpleadoRepository empleadoRepo,
+                IUsuarioRepository usuarioRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+
+                    /* Es para validar si el activo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el activo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(cedulaUsuario))
+                    {
+                        return Results.BadRequest("La cédula es necesario.");
+                    }
+
+                    /* Es para validar si el permiso de: "Leer" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Leer" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(salarioDto.Fecha_Entrega))
+                    {
+                        return Results.BadRequest("¡ERROR: La fecha de entrega no puede ser nula!");
+                    }
+
+                    /* Es para validar si el permiso de: "Crear" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Crear" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(salarioDto.Salario.ToString()) || Regex.IsMatch(salarioDto.Salario.ToString(), "@\"^\\d+\\.\\d{2}$\""))
+                    {
+                        return Results.BadRequest("¡ERROR: El salario no puede ser nulo o esta incorrecto!");
+                    }
+
+                    /* Es para validar si el permiso de: "Actualizar" tiene datos, si es nulo entonces -
+                     * el API tendria que dar un mensaje indicando que el permiso de: "Actualizar" es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(salarioDto.Descripcion))
+                    {
+                        return Results.BadRequest("¡ERROR: La descripcion no puede ser nula!");
+                    }
+
+
+                    /* Si llega hasta aquí, quiere decir que todo esta bien, por lo que llama -
+                     * al método para crear los permisos del usuario. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCedula(cedulaUsuario)!;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe esa cédula en el sistema.");
+                    }
+
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    Task<EmpleadoEntitie?> Empleado = empleadoRepo.ObtenerEmpleado_PorIdUsuario(idUsuario)!;
+                    if (Empleado.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese empleado en el sistema.");
+                    }
+
+                    int idEmpleado = Empleado!.Result!.Id;
+                    var resultadoSalario = await salarioRepo.ActualizarSalarios(salarioDto, idEmpleado);
+
+                    //Si la variable nuevoIdPermiso es nulo quiere decir que no hay nada en la BD.
+                    if (resultadoSalario == null)
+                    {
+                        return Results.BadRequest("No se pudo actualizar el salario.");
+                    }
+
+                    /* Si la variable nuevoIdPermiso es igual a 0 quiere decir que ya existe esos permisos -
+                     * con el usuario en la BD. */
+                    if (resultadoSalario == false)
+                    {
+                        return Results.BadRequest("No existe ese usuario en el sistema.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Ok(resultadoSalario);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+            //Ruta (tipo: PUT) del API que sirve para cambiar (o actualizar) las fotos de perfil:
             app.MapPut("/api/cambiarFoto", async (string tokenAcceso, HttpRequest peticion,
                 IUsuarioRepository usuarioRepo, IJwtRepository jwtRepo) =>
             {
@@ -1382,7 +2146,7 @@ namespace MuniTurrialbaAPI
                      * la base de datos. Por lo tanto se manda un error al usuario respectivamente. */
                     if (respuesta == false)
                     {
-                        return Results.BadRequest("El correo electrónico que fue proporcionado no es válido.");
+                        return Results.BadRequest("No existe ese usuario en el sistema.");
                     }
 
 
@@ -1396,7 +2160,7 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
-            //Ruta (tipo: PUT) del API que sirve para actualizar la pregunta y respuesta:
+            //Ruta (tipo: PUT) del API que sirve para actualizar las preguntas y respuestas:
             app.MapPut("/api/actualizarFAQ", async (FAQCreateDto faqDto, string preguntaActual, IFAQRepository preguntasYrespuestasRepo,
                 string tokenAcceso, IJwtRepository jwtRepo, IUsuarioRepository usuarioRepo) =>
             {
@@ -1461,12 +2225,16 @@ namespace MuniTurrialbaAPI
                      * lo tanto se manda un error al usuario respectivamente. */
                     string correoUsuario = respuestaValidarToken.FindFirst("correo")!.Value;
                     Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoUsuario)!;
-                    int idUsuario = Usuario!.Result!.Id;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese correo en el sistema.");
+                    }
 
+                    int idUsuario = Usuario!.Result!.Id;
                     var resultadoFAQ = await preguntasYrespuestasRepo.ActualizarFAQ(faqDto, idUsuario, preguntaActual);
                     if (resultadoFAQ == null)
                     {
-                        return Results.BadRequest("No se pudo actualizar el FAQ seleccionado.");
+                        return Results.BadRequest("No se pudo actualizar el FAQ.");
                     }
 
                     /* También se valida si en la variable: "nuevoFAQ" es igual a falso, -
@@ -1488,8 +2256,7 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
-
-            //Ruta (tipo: PUT) del API que sirve para actualizar un empleados:
+            //Ruta (tipo: PUT) del API que sirve para actualizar a los empleados:
             app.MapPut("/api/actualizarEmpleado", async (EmpleadoCreateDto empleadoDto,
                 IEmpleadoRepository empleadoRepo, IUsuarioRepository usuarioRepo,
                 string correoEmpleado, string tokenAcceso, IJwtRepository jwtRepo) =>
@@ -1542,12 +2309,16 @@ namespace MuniTurrialbaAPI
                      * quiere decir que no se pudo crear ese empleado en la BD. Por -
                      * lo tanto se manda un error al empleado respectivamente. */
                     Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoEmpleado)!;
-                    int idUsuario = Usuario!.Result!.Id;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese correo en el sistema.");
+                    }
 
+                    int idUsuario = Usuario!.Result!.Id;
                     var resultadoEmpleado = await empleadoRepo.ActualizarEmpleado(empleadoDto, idUsuario);
                     if (resultadoEmpleado == null)
                     {
-                        return Results.BadRequest("No se pudo actualizar el empleado(a) seleccionado.");
+                        return Results.BadRequest("No se pudo actualizar el empleado(a).");
                     }
 
                     /* También se valida si en la variable: "resultadoEmpleado" es igual a falso, -
@@ -1569,6 +2340,10 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
+
+
+
+            //                     |=============| DELETE |=============|
 
             //Ruta (tipo: DELETE) del API que sirve para eliminar la pregunta y respuesta:
             app.MapDelete("/api/eliminarFAQ", async (string preguntaFAQ, IFAQRepository preguntasYrespuestasRepo,
@@ -1616,8 +2391,12 @@ namespace MuniTurrialbaAPI
                      * lo tanto se manda un error al usuario respectivamente. */
                     string correoUsuario = respuestaValidarToken.FindFirst("correo")!.Value;
                     Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoUsuario)!;
-                    int idUsuario = Usuario!.Result!.Id;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese correo en el sistema.");
+                    }
 
+                    int idUsuario = Usuario!.Result!.Id;
                     var resultadoFAQ = await preguntasYrespuestasRepo.EliminarFAQ(preguntaFAQ, idUsuario);
                     if (resultadoFAQ == null)
                     {
@@ -1643,7 +2422,7 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
-            //Ruta (tipo: DELETE) del API que sirve para eliminar la pregunta y respuesta:
+            //Ruta (tipo: DELETE) del API que sirve para eliminar a un empleado:
             app.MapDelete("/api/eliminarEmpleado", async (string correoEmpleado, string tokenAcceso,
                 IEmpleadoRepository empleadoRepo, IUsuarioRepository usuarioRepo, IJwtRepository jwtRepo) =>
             {
@@ -1687,8 +2466,12 @@ namespace MuniTurrialbaAPI
                      * quiere decir que no se pudo crear ese empleado en la BD. Por -
                      * lo tanto se manda un error al empleado respectivamente. */
                     Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCorreo(correoEmpleado)!;
-                    int idUsuario = Usuario!.Result!.Id;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese correo en el sistema.");
+                    }
 
+                    int idUsuario = Usuario!.Result!.Id;
                     var resultadoEmpleado = await empleadoRepo.EliminarEmpleado(idUsuario);
                     var resultadoUsuario = await usuarioRepo.EliminarUsuario(idUsuario);
 
@@ -1711,6 +2494,178 @@ namespace MuniTurrialbaAPI
                      * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
                      * correctamente.*/
                     return Results.Ok(resultadoEmpleado);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+            //Ruta (tipo: DELETE) del API que sirve para eliminar un permiso de tiempo:
+            app.MapDelete("/api/eliminarPermisosTiempo", async (string cedulaUsuario, string tokenAcceso, IJwtRepository jwtRepo, 
+                IPermisoTiempoRepository tiempoRepo, IEmpleadoRepository empleadoRepo, IUsuarioRepository usuarioRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+
+                    /* Es para validar si el activo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el activo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(cedulaUsuario))
+                    {
+                        return Results.BadRequest("La cédula es necesario.");
+                    }
+
+                    /* Aquí lo que se indica es que llama al método: "CrearEmpleado()" -
+                     * para poder crear un empleado con todos los datos que se estan -
+                     * pasando por medio de la variable: usuarioDto.
+                     * 
+                     * Ahora, si en la variable: "nuevoEmpleado" es nulo, entonces -
+                     * quiere decir que no se pudo crear ese empleado en la BD. Por -
+                     * lo tanto se manda un error al empleado respectivamente. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCedula(cedulaUsuario)!;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe esa cédula en el sistema.");
+                    }
+
+
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    Task<EmpleadoEntitie?> Empleado = empleadoRepo.ObtenerEmpleado_PorIdUsuario(idUsuario)!;
+                    if (Empleado.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese empleado en el sistema.");
+                    }
+
+                    int idEmpleado = Empleado!.Result!.Id;
+                    var resultadoPermisosTiempo = await tiempoRepo.EliminarPermisosTiempo(idEmpleado);
+
+                    if (resultadoPermisosTiempo == null)
+                    {
+                        return Results.BadRequest("No se pudo eliminar el permiso de tiempo seleccionado.");
+                    }
+
+                    /* También se valida si en la variable: "resultadoPermisosTiempo" es igual a falso, -
+                     * y si lo es entonces quiere decir que ya existe un nuevoFAQ con ese correo -
+                     * o contraseña en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    if (resultadoPermisosTiempo == false)
+                    {
+                        return Results.BadRequest("No existe ese permiso de tiempo en el sistema.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Ok(resultadoPermisosTiempo);
+                }
+
+                return Results.Unauthorized();
+            }).RequireAuthorization();
+
+
+            //Ruta (tipo: DELETE) del API que sirve para eliminar un salario:
+            app.MapDelete("/api/eliminarSalarios", async (string cedulaUsuario,
+                string tokenAcceso, IJwtRepository jwtRepo, ISalarioRepository salarioRepo, IEmpleadoRepository empleadoRepo,
+                IUsuarioRepository usuarioRepo) =>
+            {
+                /* Aqui lo que se hace es validar el token de acceso que se esta -
+                 * pasando por parametro. 
+                 *
+                 * Ahora, si la respuesta da un nulo, entonces quiere decir que -
+                 * ese token esta incorrecto o que ya paso su tiempo de vida, -
+                 * por lo que se menciona que no esta autorizado. */
+                var respuestaValidarToken = jwtRepo.validarTokenJWT(tokenAcceso);
+                if (respuestaValidarToken == null)
+                {
+                    return Results.Unauthorized();
+                }
+
+
+                /* Aqui lo que se hace es obtener el claim que tiene como nombre: "rol" -
+                 * y luego transformarlo en un formato entero.
+                 * 
+                 * Esto se hace porque se necesita validar si en el token de ese usuario, -
+                 * el rol es de un empleado, administrador o moderador, y si no tiene, que -
+                 * entonces no lo deje pasar y se indique que no esta autorizado para esta -
+                 * función. */
+                int RolUsuario = int.Parse(respuestaValidarToken.FindFirst("rol")!.Value);
+                if (RolUsuario == 1 || RolUsuario == 2)
+                {
+
+                    /* Es para validar si el activo tiene datos, si es nulo o esta en blanco -
+                     * entonces el API tendria que dar un mensaje indicando que el activo es -
+                     * necesario. */
+                    if (string.IsNullOrWhiteSpace(cedulaUsuario))
+                    {
+                        return Results.BadRequest("La cédula es necesario.");
+                    }
+
+                    /* Aquí lo que se indica es que llama al método: "CrearEmpleado()" -
+                     * para poder crear un empleado con todos los datos que se estan -
+                     * pasando por medio de la variable: usuarioDto.
+                     * 
+                     * Ahora, si en la variable: "nuevoEmpleado" es nulo, entonces -
+                     * quiere decir que no se pudo crear ese empleado en la BD. Por -
+                     * lo tanto se manda un error al empleado respectivamente. */
+                    Task<UsuarioEntitie?> Usuario = usuarioRepo.ObtenerUsuario_PorCedula(cedulaUsuario)!;
+                    if (Usuario.Result == null)
+                    {
+                        return Results.BadRequest("No existe esa cédula en el sistema.");
+                    }
+
+                    int idUsuario = Usuario!.Result!.Id;
+
+                    Task<EmpleadoEntitie?> Empleado = empleadoRepo.ObtenerEmpleado_PorIdUsuario(idUsuario)!;
+                    if (Empleado.Result == null)
+                    {
+                        return Results.BadRequest("No existe ese empleado en el sistema.");
+                    }
+
+                    int idEmpleado = Empleado!.Result!.Id;
+                    var resultadoSalario = await salarioRepo.EliminarSalarios(idEmpleado);
+
+                    if (resultadoSalario == null)
+                    {
+                        return Results.BadRequest("No se pudo eliminar el salario seleccionado.");
+                    }
+
+                    /* También se valida si en la variable: "resultadoPermisosTiempo" es igual a falso, -
+                     * y si lo es entonces quiere decir que ya existe un nuevoFAQ con ese correo -
+                     * o contraseña en la BD. Por lo tanto se manda un error al usuario -
+                     * respectivamente. */
+                    if (resultadoSalario == false)
+                    {
+                        return Results.BadRequest("No existe ese salario en el sistema.");
+                    }
+
+
+                    /* Si no hubo ningún problema, entonces crearia el usuario y se mandaria -
+                     * un código: #201, lo que indicaria que la solicitud POST se pudo realizar -
+                     * correctamente.*/
+                    return Results.Ok(resultadoSalario);
                 }
 
                 return Results.Unauthorized();
