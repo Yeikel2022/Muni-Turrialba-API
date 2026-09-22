@@ -651,6 +651,8 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
+            //Este espacio es para las ulimas rutas del modulo:Administración Archivos.
+
 
 
             //                     |=============| POST |=============|
@@ -759,7 +761,7 @@ namespace MuniTurrialbaAPI
                 inicioSesionCreateDto.Ultima_Conexion = DateTime.Now;
 
                 var respuestaInicioSesion = sesionRepo.CrearRegistroInicioSesion(inicioSesionCreateDto, respuestaVerificacion_Usuario.Result!.Id);
-                 if (respuestaInicioSesion == null)
+                if (respuestaInicioSesion == null)
                 {
                     return Results.BadRequest("No se pudo continuar con el inicio de sesión.");
                 }
@@ -1574,6 +1576,7 @@ namespace MuniTurrialbaAPI
             }).RequireAuthorization();
 
 
+            //Este espacio es para las ulimas rutas del modulo:Administración Archivos.
 
 
 
