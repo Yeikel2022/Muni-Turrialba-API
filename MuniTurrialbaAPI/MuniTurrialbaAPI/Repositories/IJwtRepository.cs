@@ -1,5 +1,4 @@
-﻿using MuniTurrialbaAPI.Models;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 
 namespace MuniTurrialbaAPI.Repositories
 {
@@ -9,13 +8,14 @@ namespace MuniTurrialbaAPI.Repositories
            |===========|              pero solo es su mención.            |===========| */
 
 
-        /* NOTA: Se le coloco el: " ? " en ciertos métodos para que, cuando se usen, -
-         * estos puedan aceptar valores nulos. */
-
-        string crearTokenJWT(IEnumerable<Claim> claimsDelToken);
+        /* NOTA: Se le coloco el: " ? " en ciertos métodos para que cuando se usen -
+         * puedan aceptar valores nulos. */
+        string? crearTokenJWT(IEnumerable<Claim> claimsDelToken);
         
+
         ClaimsPrincipal? validarTokenJWT(string tokenUsuario);
         
+
         string refrescarTokenJWT();
         
         /* NOTA: 

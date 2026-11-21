@@ -1,7 +1,39 @@
 [
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_21",
+    "Method": "\u003CMain\u003Eb__0_30",
+    "RelativePath": "api/actualizarArchivo",
+    "HttpMethod": "PUT",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "archivoDto",
+        "Type": "MuniTurrialbaAPI.Models.RegistroArchivoCreateDto",
+        "IsRequired": true
+      },
+      {
+        "Name": "correoEmpleado",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "tokenAcceso",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
+    "Method": "\u003CMain\u003Eb__0_22",
     "RelativePath": "api/actualizarcontrase\u00F1a",
     "HttpMethod": "PUT",
     "IsController": false,
@@ -23,7 +55,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_28",
+    "Method": "\u003CMain\u003Eb__0_29",
     "RelativePath": "api/actualizarEmpleado",
     "HttpMethod": "PUT",
     "IsController": false,
@@ -55,7 +87,44 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_27",
+    "Method": "\u003CMain\u003Eb__0_31",
+    "RelativePath": "api/actualizarEstadoArchivo",
+    "HttpMethod": "PUT",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "estadoArchivo",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "fechaSubida",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "correoEmpleado",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "tokenAcceso",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
+    "Method": "\u003CMain\u003Eb__0_28",
     "RelativePath": "api/actualizarFAQ",
     "HttpMethod": "PUT",
     "IsController": false,
@@ -87,7 +156,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_23",
+    "Method": "\u003CMain\u003Eb__0_24",
     "RelativePath": "api/actualizarPermisos",
     "HttpMethod": "PUT",
     "IsController": false,
@@ -119,7 +188,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_24",
+    "Method": "\u003CMain\u003Eb__0_25",
     "RelativePath": "api/actualizarPermisosTiempo",
     "HttpMethod": "PUT",
     "IsController": false,
@@ -151,7 +220,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_25",
+    "Method": "\u003CMain\u003Eb__0_26",
     "RelativePath": "api/actualizarSalarios",
     "HttpMethod": "PUT",
     "IsController": false,
@@ -183,7 +252,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_22",
+    "Method": "\u003CMain\u003Eb__0_23",
     "RelativePath": "api/actualizarUsuario",
     "HttpMethod": "PUT",
     "IsController": false,
@@ -215,12 +284,88 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_26",
+    "Method": "\u003CMain\u003Eb__0_10",
+    "RelativePath": "api/archivos",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "tokenAcceso",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
+    "Method": "\u003CMain\u003Eb__0_27",
     "RelativePath": "api/cambiarFoto",
     "HttpMethod": "PUT",
     "IsController": false,
     "Order": 0,
     "Parameters": [
+      {
+        "Name": "tokenAcceso",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
+    "Method": "\u003CMain\u003Eb__0_32",
+    "RelativePath": "api/compartirArchivo",
+    "HttpMethod": "PUT",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "archivoDto",
+        "Type": "MuniTurrialbaAPI.Models.RegistroArchivoCreateDto",
+        "IsRequired": true
+      },
+      {
+        "Name": "tokenAcceso",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
+    "Method": "\u003CMain\u003Eb__0_21",
+    "RelativePath": "api/crearArchivos",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "archivoDto",
+        "Type": "MuniTurrialbaAPI.Models.RegistroArchivoCreateDto",
+        "IsRequired": true
+      },
       {
         "Name": "tokenAcceso",
         "Type": "System.String",
@@ -278,38 +423,6 @@
       {
         "Name": "faqDto",
         "Type": "MuniTurrialbaAPI.Models.FAQCreateDto",
-        "IsRequired": true
-      },
-      {
-        "Name": "tokenAcceso",
-        "Type": "System.String",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "System.Void",
-        "MediaTypes": [],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_18",
-    "RelativePath": "api/crearPermisos",
-    "HttpMethod": "POST",
-    "IsController": false,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "permisoDto",
-        "Type": "MuniTurrialbaAPI.Models.PermisoCreateDto",
-        "IsRequired": true
-      },
-      {
-        "Name": "correoUsuario",
-        "Type": "System.String",
         "IsRequired": true
       },
       {
@@ -393,7 +506,7 @@
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
     "Method": "\u003CMain\u003Eb__0_14",
-    "RelativePath": "api/crearusuario",
+    "RelativePath": "api/crearUsuarios",
     "HttpMethod": "POST",
     "IsController": false,
     "Order": 0,
@@ -401,11 +514,6 @@
       {
         "Name": "usuarioDto",
         "Type": "MuniTurrialbaAPI.Models.UsuarioCreateDto",
-        "IsRequired": true
-      },
-      {
-        "Name": "tipo",
-        "Type": "System.Boolean",
         "IsRequired": true
       },
       {
@@ -424,20 +532,25 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_13",
-    "RelativePath": "api/crearusuarios",
-    "HttpMethod": "POST",
+    "Method": "\u003CMain\u003Eb__0_37",
+    "RelativePath": "api/eliminarArchivo",
+    "HttpMethod": "DELETE",
     "IsController": false,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "usuarioDto",
-        "Type": "MuniTurrialbaAPI.Models.UsuarioCreateDto",
+        "Name": "correoEmpleado",
+        "Type": "System.String",
         "IsRequired": true
       },
       {
-        "Name": "tipo",
-        "Type": "System.Boolean",
+        "Name": "fechaSubida",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "tokenAcceso",
+        "Type": "System.String",
         "IsRequired": true
       }
     ],
@@ -451,7 +564,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_30",
+    "Method": "\u003CMain\u003Eb__0_34",
     "RelativePath": "api/eliminarEmpleado",
     "HttpMethod": "DELETE",
     "IsController": false,
@@ -478,7 +591,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_29",
+    "Method": "\u003CMain\u003Eb__0_33",
     "RelativePath": "api/eliminarFAQ",
     "HttpMethod": "DELETE",
     "IsController": false,
@@ -505,7 +618,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_31",
+    "Method": "\u003CMain\u003Eb__0_35",
     "RelativePath": "api/eliminarPermisosTiempo",
     "HttpMethod": "DELETE",
     "IsController": false,
@@ -532,7 +645,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_32",
+    "Method": "\u003CMain\u003Eb__0_36",
     "RelativePath": "api/eliminarSalarios",
     "HttpMethod": "DELETE",
     "IsController": false,
@@ -559,7 +672,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_4",
+    "Method": "\u003CMain\u003Eb__0_3",
     "RelativePath": "api/empleados",
     "HttpMethod": "GET",
     "IsController": false,
@@ -625,7 +738,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_3",
+    "Method": "\u003CMain\u003Eb__0_2",
     "RelativePath": "api/iniciosSesion",
     "HttpMethod": "GET",
     "IsController": false,
@@ -647,7 +760,34 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_8",
+    "Method": "\u003CMain\u003Eb__0_11",
+    "RelativePath": "api/obtenerArchivosCompartidos",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "correoUsuario",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "tokenAcceso",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
+    "Method": "\u003CMain\u003Eb__0_7",
     "RelativePath": "api/obtenerFAQs",
     "HttpMethod": "GET",
     "IsController": false,
@@ -669,7 +809,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_11",
+    "Method": "\u003CMain\u003Eb__0_9",
     "RelativePath": "api/obtenerQR",
     "HttpMethod": "GET",
     "IsController": false,
@@ -706,7 +846,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_5",
+    "Method": "\u003CMain\u003Eb__0_4",
     "RelativePath": "api/permisos/{correo:required}",
     "HttpMethod": "GET",
     "IsController": false,
@@ -733,7 +873,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_6",
+    "Method": "\u003CMain\u003Eb__0_5",
     "RelativePath": "api/permisosTiempo",
     "HttpMethod": "GET",
     "IsController": false,
@@ -755,7 +895,29 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_7",
+    "Method": "\u003CMain\u003Eb__0_13",
+    "RelativePath": "api/registrarUsuarios",
+    "HttpMethod": "POST",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "usuarioDto",
+        "Type": "MuniTurrialbaAPI.Models.UsuarioCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
+    "Method": "\u003CMain\u003Eb__0_6",
     "RelativePath": "api/salarios",
     "HttpMethod": "GET",
     "IsController": false,
@@ -777,7 +939,7 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_9",
+    "Method": "\u003CMain\u003Eb__0_8",
     "RelativePath": "api/usuario/{correo:required}",
     "HttpMethod": "GET",
     "IsController": false,
@@ -804,31 +966,9 @@
   },
   {
     "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_2",
-    "RelativePath": "api/usuarios",
-    "HttpMethod": "GET",
-    "IsController": false,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "tokenAcceso",
-        "Type": "System.String",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "System.Void",
-        "MediaTypes": [],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "MuniTurrialbaAPI.Program\u002B\u003C\u003Ec",
-    "Method": "\u003CMain\u003Eb__0_10",
+    "Method": "\u003CMain\u003Eb__0_18",
     "RelativePath": "api/validarcodigo/{codigo:required}",
-    "HttpMethod": "GET",
+    "HttpMethod": "POST",
     "IsController": false,
     "Order": 0,
     "Parameters": [

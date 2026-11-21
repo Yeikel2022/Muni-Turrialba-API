@@ -8,5 +8,7 @@
         public bool Crear { get; set; }
         public bool Actualizar { get; set; }
         public bool Eliminar { get; set; }
+        public bool Descargar { get; set; }
+        public bool Compartir { get; set; }
     }
 }

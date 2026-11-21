@@ -5,28 +5,6 @@
     "version": "v1"
   },
   "paths": {
-    "/api/usuarios": {
-      "get": {
-        "tags": [
-          "MuniTurrialbaAPI"
-        ],
-        "parameters": [
-          {
-            "name": "tokenAcceso",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/iniciosSesion": {
       "get": {
         "tags": [
@@ -197,28 +175,6 @@
         }
       }
     },
-    "/api/validarcodigo/{codigo}": {
-      "get": {
-        "tags": [
-          "MuniTurrialbaAPI"
-        ],
-        "parameters": [
-          {
-            "name": "codigo",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/obtenerQR": {
       "get": {
         "tags": [
@@ -265,6 +221,58 @@
         }
       }
     },
+    "/api/archivos": {
+      "get": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/obtenerArchivosCompartidos": {
+      "get": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "correoUsuario",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/iniciarsesion": {
       "post": {
         "tags": [
@@ -287,20 +295,10 @@
         }
       }
     },
-    "/api/crearusuarios": {
+    "/api/registrarUsuarios": {
       "post": {
         "tags": [
           "MuniTurrialbaAPI"
-        ],
-        "parameters": [
-          {
-            "name": "tipo",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "boolean"
-            }
-          }
         ],
         "requestBody": {
           "content": {
@@ -319,20 +317,12 @@
         }
       }
     },
-    "/api/crearusuario": {
+    "/api/crearUsuarios": {
       "post": {
         "tags": [
           "MuniTurrialbaAPI"
         ],
         "parameters": [
-          {
-            "name": "tipo",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "boolean"
-            }
-          },
           {
             "name": "tokenAcceso",
             "in": "query",
@@ -453,39 +443,21 @@
         }
       }
     },
-    "/api/crearPermisos": {
+    "/api/validarcodigo/{codigo}": {
       "post": {
         "tags": [
           "MuniTurrialbaAPI"
         ],
         "parameters": [
           {
-            "name": "correoUsuario",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "tokenAcceso",
-            "in": "query",
+            "name": "codigo",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PermisoCreateDto"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "description": "OK"
@@ -561,6 +533,38 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SalarioCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/crearArchivos": {
+      "post": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistroArchivoCreateDto"
               }
             }
           },
@@ -857,6 +861,124 @@
         }
       }
     },
+    "/api/actualizarArchivo": {
+      "put": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "correoEmpleado",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistroArchivoCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/actualizarEstadoArchivo": {
+      "put": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "estadoArchivo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fechaSubida",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "correoEmpleado",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/compartirArchivo": {
+      "put": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistroArchivoCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/eliminarFAQ": {
       "delete": {
         "tags": [
@@ -976,6 +1098,44 @@
           }
         }
       }
+    },
+    "/api/eliminarArchivo": {
+      "delete": {
+        "tags": [
+          "MuniTurrialbaAPI"
+        ],
+        "parameters": [
+          {
+            "name": "correoEmpleado",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fechaSubida",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tokenAcceso",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1043,6 +1203,12 @@
           },
           "eliminar": {
             "type": "boolean"
+          },
+          "descargar": {
+            "type": "boolean"
+          },
+          "compartir": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -1072,6 +1238,80 @@
           "id_Empleado": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegistroArchivoCreateDto": {
+        "type": "object",
+        "properties": {
+          "archivo": {
+            "type": "string",
+            "nullable": true
+          },
+          "nombre_Archivo": {
+            "type": "string",
+            "nullable": true
+          },
+          "formato_Archivo": {
+            "type": "string",
+            "nullable": true
+          },
+          "fecha_Subida": {
+            "type": "string",
+            "nullable": true
+          },
+          "fecha_Actualizacion": {
+            "type": "string",
+            "nullable": true
+          },
+          "fecha_Envio": {
+            "type": "string",
+            "nullable": true
+          },
+          "nombre_Originario": {
+            "type": "string",
+            "nullable": true
+          },
+          "apellido_1_Originario": {
+            "type": "string",
+            "nullable": true
+          },
+          "apellido_2_Originario": {
+            "type": "string",
+            "nullable": true
+          },
+          "correo_Electronico_Originario": {
+            "type": "string",
+            "nullable": true
+          },
+          "departamento_Originario": {
+            "type": "string",
+            "nullable": true
+          },
+          "nombre_Destinatario": {
+            "type": "string",
+            "nullable": true
+          },
+          "apellido_1_Destinatario": {
+            "type": "string",
+            "nullable": true
+          },
+          "apellido_2_Destinatario": {
+            "type": "string",
+            "nullable": true
+          },
+          "correo_Electronico_Destinatario": {
+            "type": "string",
+            "nullable": true
+          },
+          "departamento_Destinatario": {
+            "type": "string",
+            "nullable": true
+          },
+          "estado_Archivo": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

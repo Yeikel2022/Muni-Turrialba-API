@@ -2,6 +2,12 @@
 {
     public class ExtensionEmpleadoUsuarioEntitie
     {
+        /* Son los datos que representan -
+         * las columnas de la tabla: "Empleado". 
+         * 
+         * Nota: Esto es para mostrar toda la -
+         * información de los empleados(as), -
+         * ya que como tal son usuarios(as). */
         public string Nombre_Empleado { get; set; }
         public string Apellido_1_Empleado { get; set; }
         public string Apellido_2_Empleado { get; set; }
