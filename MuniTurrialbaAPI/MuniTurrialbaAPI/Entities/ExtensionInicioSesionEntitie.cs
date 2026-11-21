@@ -2,6 +2,11 @@
 {
     public class ExtensionInicioSesionEntitie
     {
+        /* Son los datos que representan -
+         * las columnas de la tabla: "Inicio_Sesion". 
+         * 
+         * Nota: Esto es para mostrar toda la -
+         * información sobre los inicios de sesión. */
         public string Nombre { get; set; }
         public string Apellido_1 { get; set; }
         public string Apellido_2 { get; set; }
